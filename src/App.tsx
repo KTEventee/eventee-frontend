@@ -4,7 +4,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import JoinEventPage from './pages/JoinEventPage';
 import EventPasswordPage from './pages/EventPasswordPage';
-import CreateEventPage from './pages/CreateEventPage';
+import CreateEventPageNew from './pages/CreateEventPageNew';
 import MyPage from './pages/MyPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import AdminDashboard from './pages/AdminDashboard';
@@ -24,7 +24,7 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/join-event" element={<JoinEventPage />} />
             <Route path="/event-password" element={<EventPasswordPage />} />
-            <Route path="/create-event" element={<CreateEventPage />} />
+            <Route path="/create-event" element={<CreateEventPageNew/>} />
             <Route path="/my-page" element={<MyPage />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />

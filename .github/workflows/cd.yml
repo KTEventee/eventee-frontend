@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Build frontend
-        run: npm run build
+        run: npx vite build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,7 +33,7 @@ jobs:
 
       - name: Deploy to S3
         run: |
-          aws s3 sync build/ s3://eventee-front-bucket \
+          aws s3 sync dist/ s3://eventee-front-bucket \
             --delete
 
       - name: Invalidate CloudFront cache
