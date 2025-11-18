@@ -1,0 +1,17 @@
+// tsconfig.json
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "ESNext",
+      "moduleResolution": "Node",
+      "jsx": "preserve",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "sourceMap": true,
+      "types": ["vite/client"]
+    },
+    "include": ["src"]
+  }
