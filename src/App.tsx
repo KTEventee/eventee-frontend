@@ -8,6 +8,7 @@ import CreateEventPageNew from './pages/CreateEventPageNew';
 import MyPage from './pages/MyPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import AdminDashboard from './pages/AdminDashboard';
+import EventMainPage from './pages/EventMainPage';
 import './styles/globals.css'; 
 
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/oauth/callback/google" element={<GoogleCallbackPage />} />
 
+            <Route path="/event-main" element={<EventMainPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/join-event" element={<JoinEventPage />} />
             <Route path="/event-password" element={<EventPasswordPage />} />

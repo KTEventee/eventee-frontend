@@ -12,10 +12,11 @@ export type Event = {
   title: string;
   description: string;
   inviteCode: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | null; 
+  endDate: Date | null;    
   createdBy: string;
 };
+
 
 type AppContextType = {
   user: User | null;
