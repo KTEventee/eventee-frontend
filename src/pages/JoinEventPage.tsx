@@ -1,20 +1,20 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { User } from "lucide-react";
 
 export default function JoinEventPage() {
   const navigate = useNavigate();
   const { user, setInviteCode } = useApp();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (!code.trim()) {
       setError("초대 코드를 입력해주세요");
@@ -26,13 +26,31 @@ export default function JoinEventPage() {
       return;
     }
 
-    // TODO: 백엔드 연동 필요
-    // API: GET /api/events/validate/${code}
-    // Response: { valid: boolean, message?: string }
-    // 초대 코드 유효성 검증 후 다음 단계로 이동
+    setLoading(true);
 
-    setInviteCode(code.toUpperCase());
-    navigate("/event-password");
+    try {
+      // 초대코드 검증 API 호출
+      const response = await fetch(`/api/v1/events/validate?code=${code}`, {
+        method: "GET",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "유효하지 않은 초대 코드입니다.");
+        setLoading(false);
+        return;
+      }
+
+      // 초대 코드 저장
+      setInviteCode(code.toUpperCase());
+      navigate("/event-password");
+
+    } catch (err) {
+      setError("서버와 연결할 수 없습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const canCreateEvent =
@@ -70,14 +88,12 @@ export default function JoinEventPage() {
                 maxLength={6}
               />
               {error && (
-                <p className="text-red-500 text-sm mt-2">
-                  {error}
-                </p>
+                <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
             </div>
 
-            <EventeeButton type="submit" className="w-full">
-              다음으로
+            <EventeeButton type="submit" className="w-full" disabled={loading}>
+              {loading ? "확인 중..." : "다음으로"}
             </EventeeButton>
           </form>
         </div>
@@ -102,12 +118,7 @@ export default function JoinEventPage() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </Button>
             </div>

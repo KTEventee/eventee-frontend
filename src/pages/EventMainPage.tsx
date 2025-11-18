@@ -210,13 +210,20 @@ const mockTeams: Team[] = [
 ];
 
 export default function EventMainPage() {
+  console.log("✅ EventMainPage mounted");
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
 
   // 이벤트 정보 (EventPasswordPage에서 전달받음)
-  const eventTitle = location.state?.eventTitle || "이벤트";
-  const eventCode = location.state?.eventCode || "";
+  // const eventTitle = location.state?.eventTitle || "이벤트";
+  // const eventCode = location.state?.eventCode || "";
+
+  const eventId = location.state?.eventId;
+  const eventTitle = location.state?.eventTitle;
+  const eventCode = location.state?.eventCode;
+  
+
 
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [showChatSidebar, setShowChatSidebar] = useState(false);

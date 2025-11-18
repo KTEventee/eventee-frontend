@@ -1,37 +1,34 @@
 import React from 'react';
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useApp, type User } from "../contexts/AppContext";
+import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 
 export default function SignupPage() {
+  
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useApp();
+
+  const { inviteCode, setCurrentEvent } = useApp();
+
+  // EventPasswordPage → SignupPage 로 전달된 값
+  const password = location.state?.password;
+
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // nextPage가 state로 전달되면 해당 페이지로, 아니면 기본적으로 마이페이지로
-  const nextPage = location.state?.nextPage || "/my-page";
+  const nextPage = "/event-main";
 
   const validateNickname = (value: string): string | null => {
-    if (!value.trim()) {
-      return "닉네임을 입력해주세요";
-    }
-
-    if (value.length < 2 || value.length > 5) {
-      return "아래 조건에 맞는 닉네임을 입력해주세요.";
-    }
-
-    // 한글, 영문, 숫자만 허용 (공백 및 특수문자 불가)
+    if (!value.trim()) return "닉네임을 입력해주세요";
+    if (value.length < 2 || value.length > 5)
+      return "닉네임은 2~5자여야 합니다.";
     const regex = /^[가-힣a-zA-Z0-9]+$/;
-    if (!regex.test(value)) {
-      return "아래 조건에 맞는 닉네임을 입력해주세요.";
-    }
-
+    if (!regex.test(value))
+      return "한글/영문/숫자만 사용 가능합니다.";
     return null;
   };
 
@@ -44,36 +41,71 @@ export default function SignupPage() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    // TODO: 실제 API 호출
-    // POST /api/auth/signup
-    // body: { nickname, socialProvider, socialId }
-    // response: { success: boolean, message?: string, user?: User }
-
-    // Mock: 닉네임 중복 체크 시뮬레이션
-    const existingNicknames = ["테스트", "admin", "관리자"];
-
-    if (existingNicknames.includes(nickname)) {
-      setError("이미 존재하는 닉네임입니다.");
-      setIsSubmitting(false);
+    if (!inviteCode || !password) {
+      setError("올바른 접근이 아닙니다. 처음부터 다시 진행해주세요.");
       return;
     }
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      nickname,
-      email: "new@example.com",
-      role: "user",
-    };
-    setUser(newUser);
-    setIsSubmitting(false);
-    navigate(nextPage);
+    setIsSubmitting(true);
+
+    try {
+      // join API 호출
+      const response = await fetch(`/api/v1/events/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inviteCode,
+          password,
+          nickname
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "이벤트 참여에 실패했습니다.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 백엔드 result 구조에 맞춰 저장
+      setCurrentEvent({
+        id: data.result.eventId,
+        title: data.result.title,
+        description: data.result.description ?? "",
+        thumbnailUrl: data.result.thumbnailUrl,
+        teamCount: data.result.teamCount,
+        inviteCode: inviteCode,
+        role: data.result.role,
+        groups: data.result.groups
+      });
+
+      console.log("➡️ navigating to EventMainPage with:", {
+        eventId: data.result.eventId,
+        eventTitle: data.result.title,
+        eventCode: inviteCode,
+      });
+      
+      navigate(nextPage, {
+        state: {
+          eventId: data.result.eventId,
+          eventTitle: data.result.title,
+          eventCode: inviteCode,
+        },
+      });
+      
+
+    } catch (err) {
+      setError("서버와 연결할 수 없습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative">
-      {/* EvenTee 로고 */}
       <div className="absolute left-12 top-8">
         <p className="text-[30px] font-bold">
           Even<span className="text-[#67594c]">Tee</span>
@@ -82,7 +114,7 @@ export default function SignupPage() {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl mb-2">회원가입</h1>
+          <h1 className="text-3xl mb-2">닉네임 입력</h1>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-8">
@@ -103,22 +135,15 @@ export default function SignupPage() {
                 disabled={isSubmitting}
               />
               {error && (
-                <p className="text-red-500 text-sm mt-2">
-                  {error}
-                </p>
+                <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
               <p className="text-gray-500 text-xs mt-2">
-                2자 이상 5자 이하, 한글, 영문, 숫자만 허용 /
-                공백 및 특수문자는 사용 불가합니다.
+                2~5자, 한글/영문/숫자만 사용 가능
               </p>
             </div>
 
-            <EventeeButton
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "확인 중..." : "다음으로"}
+            <EventeeButton type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "참여 중..." : "입장하기"}
             </EventeeButton>
           </form>
         </div>
