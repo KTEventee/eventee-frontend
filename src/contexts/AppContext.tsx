@@ -20,6 +20,8 @@ export type Event = {
 type AppContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
+  accessToken: string | null;
+  setAccessToken: (token: string | null) => void;
   currentEvent: Event | null;
   setCurrentEvent: (event: Event | null) => void;
   inviteCode: string;
@@ -31,11 +33,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [inviteCode, setInviteCode] = useState<string>('');
 
   const logout = () => {
     setUser(null);
+    setAccessToken(null);
     setCurrentEvent(null);
     setInviteCode('');
   };
@@ -45,6 +49,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         setUser,
+        accessToken,
+        setAccessToken,
         currentEvent,
         setCurrentEvent,
         inviteCode,
