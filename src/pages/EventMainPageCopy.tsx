@@ -19,7 +19,6 @@ import {
   Send,
   UserCircle,
   ArrowLeft,
-  Trash2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -30,7 +29,6 @@ import {
 } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import { is } from "date-fns/locale";
 
 // Mock 데이터
 type Comment = {
@@ -38,8 +36,7 @@ type Comment = {
   author: string;
   content: string;
   timestamp: string;
-  imageUrl?: string;  
-  isWrite: boolean;
+  imageUrl?: string;
 };
 
 type PollOption = {
@@ -60,7 +57,6 @@ type Post = {
   pollOptions?: PollOption[];
   pollQuestion?: string;
   userVote?: string; // 사용자가 투표한 옵션 ID
-  isWrite: boolean;
 };
 
 type Team = {
@@ -82,7 +78,7 @@ export default function EventMainPage() {
   
   //todo event 읽어와야할 필요가 있음
   const eventId = location.state?.eventId || 7;
-  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNDg2NDI0LCJleHAiOjE3NjM0ODgyMjR9.X3BbqvGjLGcnDsLXeT2Wn3uiLn9P3nesAfgD3k2gJfIzB17NF7ouzikeZbqOmjF-4ElISR0pKaDh-3FG-FwFyw";
+  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNDg1MTQ0LCJleHAiOjE3NjM0ODY5NDR9.eLCPu3prgmNACYKNfOoIF7iQCjVu4so0f7XFybdsSxy2At-bwsfHyOQNQR90O1VUkwoq1L6nfytUIxXLszSsug";
 
   console.log("eventId:"+eventId);
 
@@ -209,10 +205,9 @@ export default function EventMainPage() {
           isLiked: false,
           comments: p.comments.map((c: any) => ({
             id: c.commentId,
-            author: c.writer,
+            author: c.writerName,
             content: c.content,
             timestamp: c.createdAt,
-            isWrite: c.isWrite,
           })),
         }));
 
@@ -275,7 +270,6 @@ const handleUpdatePost = async (
 
       likes: 0,
       isLiked: false,
-      isWrite:updated.isWrite,
 
       type: updated.type === "vote" ? "vote" : "text",
       pollQuestion: updated.voteTitle,
@@ -398,67 +392,49 @@ const handleUpdatePost = async (
     }    
   };
 
-  const handleAddComment = async (teamId: string, postId: string) => {
-  const commentText = commentInputs[postId];
-  if (!commentText?.trim()) return;
+  const handleAddComment = (teamId: string, postId: string) => {
+    const commentText = commentInputs[postId];
+    if (!commentText?.trim()) return;
 
-  try {
-    // 서버로 댓글 전송 (DTO: CommentUpdateDto(long id, String content))
-    const body = {
-      postId: Number(postId),
+    // TODO: API 호출
+    // POST /api/events/:eventCode/posts/:postId/comments
+    // body: { content: commentText }
+
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      author: user?.nickname || "익명",
       content: commentText,
+      timestamp: new Date().toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      imageUrl: commentImages[postId] || undefined,
     };
 
-    const res = await fetch("http://localhost:8080/api/v1/comment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (!data.isSuccess) {
-      console.error("댓글 생성 실패:", data.message);
-      return;
-    }
-
-    // 서버 반영된 최신 게시글을 다시 불러와 상태 갱신
-    await loadPostsForTeams();
+    setTeams(
+      teams.map((team) => {
+        if (team.id === teamId) {
+          return {
+            ...team,
+            posts: team.posts.map((post) => {
+              if (post.id === postId) {
+                return {
+                  ...post,
+                  comments: [...post.comments, newComment],
+                };
+              }
+              return post;
+            }),
+          };
+        }
+        return team;
+      }),
+    );
 
     // 댓글 입력창 초기화
     setCommentInputs({ ...commentInputs, [postId]: "" });
     setCommentImages({ ...commentImages, [postId]: null });
-  } catch (err) {
-    console.error("댓글 생성 API 오류:", err);
-  }
-};
-
-const handleDeleteComment = async (
-  commentId: string,
-) => {
-  try {
-    const res = await fetch(`http://localhost:8080/api/v1/comment/${commentId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const data = await res.json();
-    if (!data.isSuccess) {
-      console.error("댓글 삭제 실패:", data.message);
-      return;
-    }
-
-    // 삭제 후 최신 상태로 갱신
-    await loadPostsForTeams();
-  } catch (err) {
-    console.error("댓글 삭제 API 오류:", err);
-  }
-};
+  };
 
   const handleCommentInputChange = (
     postId: string,
@@ -644,6 +620,138 @@ const handleDeleteComment = async (
                               );
                             })}
                           </div>
+
+                          {/* 댓글 목록 */}
+                          {post.comments.length > 0 && (
+                            <div className="border-t pt-3 mb-3 space-y-2">
+                              {post.comments.map((comment) => (
+                                <div
+                                  key={comment.id}
+                                  className="flex gap-2"
+                                >
+                                  <div className="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0"></div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-600">
+                                        {comment.author}
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        {comment.timestamp}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-gray-800 mt-0.5">
+                                      {comment.content}
+                                    </p>
+                                    {comment.imageUrl && (
+                                      <img
+                                        src={comment.imageUrl}
+                                        alt="comment"
+                                        className="w-full rounded-lg mt-2 object-cover max-h-40"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 댓글 입력 */}
+                          <div className="space-y-2">
+                            {commentImages[post.id] && (
+                              <div className="relative">
+                                <img
+                                  src={commentImages[post.id]!}
+                                  alt="preview"
+                                  className="w-full rounded-lg object-cover max-h-32"
+                                />
+                                <button
+                                  onClick={() => {
+                                    setCommentImages({
+                                      ...commentImages,
+                                      [post.id]: null,
+                                    });
+                                  }}
+                                  className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70"
+                                >
+                                  <X className="w-4 h-4 text-white" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id={`comment-image-poll-${post.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file =
+                                    e.target.files?.[0];
+                                  if (file) {
+                                    const reader =
+                                      new FileReader();
+                                    reader.onloadend = () => {
+                                      setCommentImages({
+                                        ...commentImages,
+                                        [post.id]:
+                                          reader.result as string,
+                                      });
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                              <button
+                                className="text-gray-400 hover:text-gray-600"
+                                onClick={() => {
+                                  document
+                                    .getElementById(
+                                      `comment-image-poll-${post.id}`,
+                                    )
+                                    ?.click();
+                                }}
+                              >
+                                <ImageIcon className="w-4 h-4" />
+                              </button>
+                              <input
+                                type="text"
+                                value={
+                                  commentInputs[post.id] || ""
+                                }
+                                onChange={(e) =>
+                                  handleCommentInputChange(
+                                    post.id,
+                                    e.target.value,
+                                  )
+                                }
+                                onKeyPress={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleAddComment(
+                                      team.id,
+                                      post.id,
+                                    );
+                                  }
+                                }}
+                                placeholder="댓글 입력..."
+                                className="flex-1 bg-transparent text-xs outline-none"
+                              />
+                              <button
+                                onClick={() =>
+                                  handleAddComment(
+                                    team.id,
+                                    post.id,
+                                  )
+                                }
+                                disabled={
+                                  !commentInputs[
+                                    post.id
+                                  ]?.trim()
+                                }
+                                className="text-gray-400 hover:text-[#67594C] disabled:opacity-30 transition-colors"
+                              >
+                                <Send className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
                         </>
                       ) : (
                         <>
@@ -699,24 +807,13 @@ const handleDeleteComment = async (
                                 >
                                   <div className="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0"></div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-600">
-                                          {comment.author}
-                                        </span>
-                                        <span className="text-xs text-gray-400">
-                                          {comment.timestamp}
-                                        </span>
-                                      </div>
-                                      {comment.isWrite && (
-                                        <button
-                                          onClick={() => handleDeleteComment(comment.id)}
-                                          aria-label="댓글 삭제"
-                                          className="ml-2 p-1 rounded hover:bg-red-50 transition-colors"
-                                        >
-                                          <Trash2 className="w-4 h-4 text-red-500" />
-                                        </button>
-                                      )}
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-600">
+                                        {comment.author}
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        {comment.timestamp}
+                                      </span>
                                     </div>
                                     <p className="text-xs text-gray-800 mt-0.5">
                                       {comment.content}

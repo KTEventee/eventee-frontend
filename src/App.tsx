@@ -7,6 +7,7 @@ import EventPasswordPage from './pages/EventPasswordPage';
 import CreateEventPage from './pages/CreateEventPage';
 import MyPage from './pages/MyPage';
 import AdminDashboard from './pages/AdminDashboard';
+import EventMainPage from './pages/EventMainPage';
 import './styles/globals.css'; 
 
 function App() {
@@ -23,6 +24,8 @@ function App() {
             <Route path="/my-page" element={<MyPage />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            <Route path="/event-enter" element={<EventMainPage />} />
           </Routes>
         </div>
       </BrowserRouter>
