@@ -21,6 +21,8 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/oauth/callback/google" element={<GoogleCallbackPage />} />
+            <Route path="/oauth/callback/google/success" element={<GoogleCallbackPage />} />
+
 
             <Route path="/event-main" element={<EventMainPage />} />
             <Route path="/signup" element={<SignupPage />} />

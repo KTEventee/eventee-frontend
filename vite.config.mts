@@ -13,7 +13,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "https://api.eventee.cloud", 
+        target: "https://api.eventee.cloud",  
         changeOrigin: true,
         secure: false,
       },
