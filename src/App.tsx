@@ -9,6 +9,9 @@ import MyPage from './pages/MyPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import AdminDashboard from './pages/AdminDashboard';
 import EventMainPage from './pages/EventMainPage';
+import InviteCodePage from "./pages/InviteCodePage";
+
+
 import './styles/globals.css'; 
 
 
@@ -29,6 +32,9 @@ function App() {
             <Route path="/join-event" element={<JoinEventPage />} />
             <Route path="/event-password" element={<EventPasswordPage />} />
             <Route path="/create-event" element={<CreateEventPageNew/>} />
+            <Route path="/invite-code" element={<InviteCodePage />} />
+
+
             <Route path="/my-page" element={<MyPage />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
