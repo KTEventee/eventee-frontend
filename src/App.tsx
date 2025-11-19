@@ -32,6 +32,8 @@ function App() {
             <Route path="/my-page" element={<MyPage />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            <Route path="/event-enter" element={<EventMainPage />} />
           </Routes>
         </div>
       </BrowserRouter>

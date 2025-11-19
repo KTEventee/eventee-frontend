@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+build/
+dist/
+node_modules/
+.DS_Store
+*.icloud
+=======
 # Logs
 logs
 *.log
@@ -27,3 +34,4 @@ build/
 dist/
 package-lock 2.json
 
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
