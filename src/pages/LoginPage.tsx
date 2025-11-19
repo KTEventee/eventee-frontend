@@ -1,60 +1,33 @@
 import { useNavigate } from "react-router-dom";
-import { useApp, type User } from "../contexts/AppContext";
+// import { useApp, type User } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+
+const buildGoogleOAuthUrl = (target: string) => {
+  return (
+    `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${GOOGLE_CLIENT_ID}` +
+    `&redirect_uri=${REDIRECT_URI}` +
+    `&response_type=code` +
+    `&scope=email%20profile%20openid` +
+    `&access_type=offline` +
+    `&prompt=consent` +
+    `&state=${target}`
+  );
+};
+
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setUser } = useApp();
 
-  const handleGoogleLogin = async () => {
-    // TODO: 실제 API 호출
-    // POST /api/auth/google
-    // 백엔드에서 OAuth 처리 후 사용자 정보와 회원가입 여부 반환
-    // response: { isRegistered: boolean, user?: User }
-
-    // Mock: 기존 사용자 시뮬레이션
-    const isExistingUser = Math.random() > 0.3;
-
-    if (isExistingUser) {
-      // 기존 사용자: 바로 마이페이지로
-      const mockUser: User = {
-        id: "1",
-        nickname: "테스트유저",
-        email: "test@example.com",
-        role: "user",
-      };
-      setUser(mockUser);
-      navigate("/my-page");
-    } else {
-      // 신규 사용자: 닉네임 입력 페이지로
-      navigate("/signup");
-    }
+  const handleGoogleLogin = () => {
+    window.location.href = buildGoogleOAuthUrl("my-page");
   };
 
-  const handleJoinEvent = async () => {
-    // TODO: 실제 API 호출
-    // POST /api/auth/google
-    // 백엔드에서 OAuth 처리 후 사용자 정보와 회원가입 여부 반환
-
-    // Mock: 기존 사용자 시뮬레이션
-    const isExistingUser = Math.random() > 0.3;
-
-    if (isExistingUser) {
-      // 기존 사용자: 이벤트 코드 입력 페이지로
-      const mockUser: User = {
-        id: "1",
-        nickname: "테스트유저",
-        email: "test@example.com",
-        role: "user",
-      };
-      setUser(mockUser);
-      navigate("/join-event");
-    } else {
-      // 신규 사용자: 닉네임 입력 후 이벤트 코드 입력으로
-      navigate("/signup", {
-        state: { nextPage: "/join-event" },
-      });
-    }
+  const handleJoinEvent = () => {
+    window.location.href = buildGoogleOAuthUrl("join-event");
   };
 
   return (

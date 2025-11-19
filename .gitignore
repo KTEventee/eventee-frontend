@@ -1,5 +1,37 @@
+<<<<<<< HEAD
 build/
 dist/
 node_modules/
 .DS_Store
 *.icloud
+=======
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist/
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+build/
+dist/
+package-lock 2.json
+
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a

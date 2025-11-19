@@ -22,7 +22,11 @@ jobs:
         run: npm ci
 
       - name: Build frontend
+<<<<<<< HEAD
         run: npm run build
+=======
+        run: npx vite build
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,11 +37,19 @@ jobs:
 
       - name: Deploy to S3
         run: |
+<<<<<<< HEAD
           aws s3 sync build/ s3://eventee-front-bucket \
+=======
+          aws s3 sync dist/ s3://eventee-front-bucket \
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
             --delete
 
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+<<<<<<< HEAD
             --paths "/*"
+=======
+            --paths "/*"
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a

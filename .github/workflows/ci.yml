@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+# .github/workflows/ci.yml
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
 name: Frontend CI
 
 on:
@@ -11,12 +15,19 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+<<<<<<< HEAD
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Setup Node
+=======
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
         uses: actions/setup-node@v3
         with:
           node-version: 20
@@ -25,4 +36,8 @@ jobs:
         run: npm ci
 
       - name: Build
+<<<<<<< HEAD
         run: npm run build
+=======
+        run: npx vite build
+>>>>>>> a88b2e37237bb9df611dc3a5345758ec39a6765a
