@@ -5,7 +5,7 @@ export type User = {
   nickname: string | null;
   email: string | null;
   socialId: string | null;
-  profileImage?: string | null;
+  profileImageUrl?: string | null;
   role: 'user' | 'admin' | 'master_admin' | null;
 };
 
