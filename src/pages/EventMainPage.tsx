@@ -60,6 +60,7 @@ type Post = {
   pollQuestion?: string;
   userVote?: string; // 사용자가 투표한 옵션 ID
   isWrite: boolean;
+  pollUsesPercent?: boolean;
 };
 
 type Team = {
@@ -243,7 +244,9 @@ export default function EventMainPage() {
               userVoteVal = "voted";
             }
           }
-
+          
+          const pollUsesPercent = Boolean(voteResp && typeof voteResp === "object" && (voteResp.op1Percent !== undefined || voteResp.op2Percent !== undefined));
+          
           return {
             id: String(p.postId),
             author: p.writerName,
@@ -252,6 +255,7 @@ export default function EventMainPage() {
             pollQuestion: p.voteTitle,
             pollOptions,
             userVote: userVoteVal,
+            pollUsesPercent,
             likes: 0,
             isLiked: false,
             isWrite: p.isWrite ?? false,
@@ -536,45 +540,45 @@ const handleDeleteComment = async (
   teamId: string,
   postId: string,
   optionId: string,
-) => {
-  // 현재 포스트 찾기
-  const team = teams.find((t) => t.id === teamId);
-  const post = team?.posts.find((p) => p.id === postId);
-  if (!post || !post.pollOptions) return;
+  ) => {
+    // 현재 포스트 찾기
+    const team = teams.find((t) => t.id === teamId);
+    const post = team?.posts.find((p) => p.id === postId);
+    if (!post || !post.pollOptions) return;
 
-  // 이미 투표한 상태면 무시 (중복 선택 방지)
-  if (post.userVote) {
-    console.log("이미 투표되어 있음, 추가 투표 불가:", post.userVote);
-    return;
-  }
+    // 이미 투표한 상태면 무시 (중복 선택 방지)
+    if (post.userVote) {
+      console.log("이미 투표되어 있음, 추가 투표 불가:", post.userVote);
+      return;
+    }
 
-  // 낙관적 업데이트를 위한 백업
-  const prevTeams = teams;
+    // 낙관적 업데이트를 위한 백업
+    const prevTeams = teams;
 
-  // 낙관적 UI 업데이트: pollUsesPercent면 퍼센트 직접 변경하지 않고 userVote만 설정
-  setTeams((prev) =>
-    prev.map((t) =>
-      t.id === teamId
-        ? {
-            ...t,
-            posts: t.posts.map((p) => {
-              if (p.id !== postId) return p;
-              return {
-                ...p,
-                userVote: optionId,
-                pollOptions: p.pollUsesPercent
-                  ? p.pollOptions // 퍼센트 기반이면 그대로 (서버 응답으로 갱신할 것)
-                  : p.pollOptions.map((opt) =>
-                      opt.id === optionId
-                        ? { ...opt, votes: opt.votes + 1 }
-                        : opt,
-                    ),
-              };
-            }),
-          }
-        : t,
-    ),
-  );
+    // 낙관적 UI 업데이트: pollUsesPercent면 퍼센트 직접 변경하지 않고 userVote만 설정
+    setTeams((prev) =>
+      prev.map((t) =>
+        t.id === teamId
+          ? {
+              ...t,
+              posts: t.posts.map((p) => {
+                if (p.id !== postId) return p;
+                return {
+                  ...p,
+                  userVote: optionId,
+                   pollOptions: Array.isArray(p.pollOptions)
+                    ? p.pollUsesPercent
+                      ? p.pollOptions // 퍼센트 기반이면 그대로
+                      : p.pollOptions.map((opt) =>
+                          opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt,
+                        )
+                    : p.pollOptions,
+                };
+              }),
+            }
+          : t,
+      ),
+    );
 
   // voteText 결정 (옵션 텍스트 우선, 없으면 optN -> N)
   const option = post.pollOptions.find((o) => o.id === optionId);
