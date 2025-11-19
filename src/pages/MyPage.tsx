@@ -31,12 +31,14 @@ export default function MyPage() {
       .then((json) => {
         if (!json.isSuccess) return;
 
+        // 사용자 정보 저장
         setUser((prev) => ({
           ...(prev || {}),
           nickname: json.result.nickname,
           profileImageUrl: json.result.profileImageUrl,
         }));
 
+        // 참여 이벤트 저장
         setJoinedEvents(json.result.joinedEvents || []);
       });
   }, [API_URL, setUser]);
@@ -57,32 +59,42 @@ export default function MyPage() {
 
   return (
     <>
-      <div className="min-h-screen px-4 py-6 relative">
+      <div className="min-h-screen px-4 py-6 relative bg-[#faf9f6]">
         <div className="max-w-5xl mx-auto">
 
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl">
+            <h1 className="text-3xl font-bold">
               Even<span style={{ color: "#67594C" }}>Tee</span>
             </h1>
           </div>
 
-          {/* 프로필 */}
+          {/* 프로필 영역 */}
           <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
             <div className="flex items-center justify-between">
+
+              {/* 프로필 이미지 + 닉네임 */}
               <div className="flex items-center gap-6">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl"
-                  style={{ backgroundColor: "#D2CDBC" }}
-                >
-                  <UserIcon className="h-12 w-12" />
+
+                {/* 프로필 이미지 표시 */}
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-[#D2CDBC] flex items-center justify-center">
+                  {user.profileImageUrl ? (
+                    <img
+                      src={user.profileImageUrl}
+                      alt="프로필 이미지"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserIcon className="h-12 w-12 text-white" />
+                  )}
                 </div>
 
-                <h2 className="text-2xl" style={{ color: "#67594C" }}>
+                <h2 className="text-2xl font-semibold" style={{ color: "#67594C" }}>
                   {user.nickname ?? "사용자"}
                 </h2>
               </div>
 
+              {/* 버튼 */}
               <div className="flex gap-3">
                 <EventeeButton
                   variant="ghost"
@@ -100,13 +112,14 @@ export default function MyPage() {
                   로그아웃
                 </EventeeButton>
               </div>
+
             </div>
           </div>
 
-          {/* 참여중인 이벤트 */}
+          {/* 참여 이벤트 리스트 */}
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl" style={{ color: "#67594C" }}>
+              <h2 className="text-2xl font-semibold" style={{ color: "#67594C" }}>
                 참여중인 이벤트
               </h2>
             </div>
@@ -117,11 +130,13 @@ export default function MyPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
                 {joinedEvents.map((event) => (
                   <div
                     key={event.eventId}
                     className="bg-white rounded-2xl shadow-sm overflow-hidden"
                   >
+                    {/* 썸네일 */}
                     <div className="relative h-48 bg-gray-200">
                       <img
                         src={event.thumbnailUrl}
@@ -130,24 +145,29 @@ export default function MyPage() {
                       />
                     </div>
 
+                    {/* 카드 내용 */}
                     <div className="p-6">
-                      <h3 className="mb-2" style={{ color: "#67594C" }}>
+                      <h3
+                        className="mb-2 font-semibold"
+                        style={{ color: "#67594C" }}
+                      >
                         {event.title}
                       </h3>
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="flex -space-x-2">
-                            {event.participantProfileImages
-                              .slice(0, 3)
-                              .map((img, idx) => (
-                                <img
-                                  key={idx}
-                                  src={img}
-                                  className="w-8 h-8 rounded-full border-2 border-white object-cover"
-                                />
-                              ))}
 
+                          {/* 참가자 프로필 이미지들 */}
+                          <div className="flex -space-x-2">
+                            {event.participantProfileImages.slice(0, 3).map((img, idx) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                              />
+                            ))}
+
+                            {/* +몇명 표시 */}
                             {event.participantsCount > 3 && (
                               <div
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs border-2 border-white"
@@ -174,12 +194,15 @@ export default function MyPage() {
                         </EventeeButton>
                       </div>
                     </div>
+
                   </div>
                 ))}
+
               </div>
             )}
           </div>
 
+          {/* 이벤트 생성 버튼 */}
           <button
             onClick={() => navigate("/create-event")}
             className="fixed bottom-10 right-10 bg-[#67594C] text-white px-6 py-4 rounded-full shadow-lg hover:bg-[#564a3f] transition"
@@ -190,7 +213,7 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* ⭐ 여기서 모달 렌더링 */}
+      {/* 프로필 수정 모달 */}
       <ProfileEditModal
         open={isProfileModalOpen}
         onClose={() => setProfileModalOpen(false)}
