@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import EventeeButton from "../components/EventeeButton";
 
 const GOOGLE_CLIENT_ID = "1311838165-j2g0s0tnb4hr1ptsksurpultd8uk14ov.apps.googleusercontent.com"; 
-// const REDIRECT_URI = "http://localhost:3000/oauth/callback/google";
-const REDIRECT_URI = "https://www.eventee.cloud/oauth/callback/google";
+// const REDIRECT_URI = "http://localhost:8080/api/v1/auth/google";
+const REDIRECT_URI = "https://api.eventee.cloud/api/v1/auth/google";
 
 const buildGoogleOAuthUrl = (target: string) => {
   return (
