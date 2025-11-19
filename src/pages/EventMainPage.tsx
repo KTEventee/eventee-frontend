@@ -210,7 +210,7 @@ const mockTeams: Team[] = [
 ];
 
 export default function EventMainPage() {
-  console.log("✅ EventMainPage mounted");
+  console.log("EventMainPage mounted");
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();

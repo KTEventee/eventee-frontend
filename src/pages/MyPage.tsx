@@ -19,10 +19,12 @@ export default function MyPage() {
 
   const [joinedEvents, setJoinedEvents] = useState<JoinedEvent[]>([]);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     if (!accessToken) return;
 
-    fetch("/api/v1/member/mypage", {
+    fetch(`${API_URL}/api/v1/member/mypage`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -32,16 +34,16 @@ export default function MyPage() {
       .then((res) => res.json())
       .then((json) => {
         if (!json.isSuccess) return;
-
         setJoinedEvents(json.result.joinedEvents || []);
       });
-  }, [accessToken]);
+  }, [accessToken, API_URL]);
 
   if (!user) return null;
 
   return (
     <div className="min-h-screen px-4 py-6">
       <div className="max-w-5xl mx-auto">
+        
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl" style={{ color: "#000000" }}>
@@ -83,7 +85,7 @@ export default function MyPage() {
           </div>
         </div>
 
-        {/* 참여중인 이벤트 = 모든 joinedEvents */}
+        {/* 참여중인 이벤트 */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl" style={{ color: "#67594C" }}>
@@ -98,7 +100,10 @@ export default function MyPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {joinedEvents.map((event) => (
-                <div key={event.eventId} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div
+                  key={event.eventId}
+                  className="bg-white rounded-2xl shadow-sm overflow-hidden"
+                >
                   <div className="relative h-48 bg-gray-200">
                     <img
                       src={event.thumbnailUrl}
@@ -114,16 +119,18 @@ export default function MyPage() {
 
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        {/* 참가자 프로필 이미지 (최대 3개) */}
+                        {/* 참가자 프로필 이미지 */}
                         <div className="flex -space-x-2">
-                          {event.participantProfileImages.slice(0, 3).map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt="participant"
-                              className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                            />
-                          ))}
+                          {event.participantProfileImages
+                            .slice(0, 3)
+                            .map((img, idx) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt="participant"
+                                className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                              />
+                            ))}
 
                           {event.participantsCount > 3 && (
                             <div

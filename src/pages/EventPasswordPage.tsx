@@ -14,6 +14,8 @@ export default function EventPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -26,8 +28,7 @@ export default function EventPasswordPage() {
     setLoading(true);
 
     try {
-      // 비밀번호 검증 API 호출
-      const response = await fetch(`/api/v1/events/verify`, {
+      const response = await fetch(`${API_URL}/api/v1/events/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,7 +47,7 @@ export default function EventPasswordPage() {
         return;
       }
 
-
+      // 이벤트 정보 저장
       setCurrentEvent({
         id: data.result.eventId,
         title: data.result.title,
@@ -57,7 +58,7 @@ export default function EventPasswordPage() {
         createdBy: data.result.role ?? "PARTICIPANT",
       });
 
-      // 닉네임 입력 페이지로 이동 (state 함께 전달)
+      // 닉네임 입력 페이지로 이동 (state 전달)
       navigate("/signup", {
         state: {
           password,

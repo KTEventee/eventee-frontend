@@ -7,18 +7,19 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 
 export default function SignupPage() {
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
   const { inviteCode, setCurrentEvent } = useApp();
 
-  // EventPasswordPage → SignupPage 로 전달된 값
   const password = location.state?.password;
 
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const nextPage = "/event-main";
 
@@ -49,8 +50,8 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      // join API 호출
-      const response = await fetch(`/api/v1/events/join`, {
+      // 🔥 환경변수 적용된 절대 API 주소
+      const response = await fetch(`${API_URL}/api/v1/events/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,12 +83,6 @@ export default function SignupPage() {
         groups: data.result.groups
       });
 
-      console.log("➡️ navigating to EventMainPage with:", {
-        eventId: data.result.eventId,
-        eventTitle: data.result.title,
-        eventCode: inviteCode,
-      });
-      
       navigate(nextPage, {
         state: {
           eventId: data.result.eventId,
@@ -95,7 +90,6 @@ export default function SignupPage() {
           eventCode: inviteCode,
         },
       });
-      
 
     } catch (err) {
       setError("서버와 연결할 수 없습니다.");

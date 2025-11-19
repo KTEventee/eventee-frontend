@@ -12,6 +12,8 @@ export default function JoinEventPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -29,10 +31,13 @@ export default function JoinEventPage() {
     setLoading(true);
 
     try {
-      // 초대코드 검증 API 호출
-      const response = await fetch(`/api/v1/events/validate?code=${code}`, {
-        method: "GET",
-      });
+      const response = await fetch(
+        `${API_URL}/api/v1/events/validate?code=${code}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
 
       const data = await response.json();
 

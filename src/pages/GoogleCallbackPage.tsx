@@ -5,14 +5,13 @@ import { useApp } from "../contexts/AppContext";
 export default function GoogleCallbackPage() {
   const navigate = useNavigate();
   const { setUser, setAccessToken } = useApp();
-  
+  const API_URL = import.meta.env.VITE_API_URL; 
+
   useEffect(() => {
     const url = new URL(window.location.href);
 
     const accessToken = url.searchParams.get("accessToken");
-    const state = url.searchParams.get("state") || "my-page"; 
-    const email = url.searchParams.get("email");
-    const socialId = url.searchParams.get("socialId");
+    const state = url.searchParams.get("state") || "my-page";
 
     if (!accessToken) {
       alert("Google 로그인 실패");
@@ -20,9 +19,10 @@ export default function GoogleCallbackPage() {
       return;
     }
 
+    // AccessToken 저장
     setAccessToken(accessToken);
 
-    fetch("/api/v1/member/mypage", {
+    fetch(`${API_URL}/api/v1/member/mypage`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -37,15 +37,17 @@ export default function GoogleCallbackPage() {
           return;
         }
 
+        // 유저 저장
         setUser(json.result);
 
+        // 로그인 성공 → state 기반 페이지 이동
         navigate(`/${state}`);
       })
       .catch(() => {
         alert("서버 오류");
         navigate("/login");
       });
-  }, [navigate, setUser, setAccessToken]);
+  }, [navigate, setUser, setAccessToken, API_URL]);
 
   return (
     <div className="p-6 text-center">
