@@ -21,7 +21,7 @@ export type Event = {
 
 type AppContextType = {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 
   accessToken: string | null;
   setAccessToken: (token: string | null) => void;
@@ -34,6 +34,7 @@ type AppContextType = {
 
   logout: () => void;
 };
+
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -71,6 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
       }}
     >
+
       {children}
     </AppContext.Provider>
   );

@@ -9,6 +9,7 @@ export async function apiFetch(url: string, options: any = {}) {
     return fetch(url, {
       ...options,
       headers,
+      credentials: "include",  
     });
   }
   

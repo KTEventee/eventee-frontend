@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { User as UserIcon } from "lucide-react";
+import { apiFetch } from "../utils/apiFetch";
 
 type JoinedEvent = {
   eventId: number;
@@ -15,43 +16,57 @@ type JoinedEvent = {
 
 export default function MyPage() {
   const navigate = useNavigate();
-  const { user, accessToken, logout } = useApp();
+  const { user, setUser, logout } = useApp();
 
   const [joinedEvents, setJoinedEvents] = useState<JoinedEvent[]>([]);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // 마이페이지 정보 로딩
   useEffect(() => {
-    if (!accessToken) return;
-
-    fetch(`${API_URL}/api/v1/member/mypage`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      credentials: "include",
-    })
+    apiFetch(`${API_URL}/api/v1/member/mypage`, { method: "GET" })
       .then((res) => res.json())
       .then((json) => {
         if (!json.isSuccess) return;
+
+        // ⭐ nickname, profileImage만 갱신
+        setUser((prev) => ({
+          ...(prev || {}),
+          nickname: json.result.nickname,
+          profileImageUrl: json.result.profileImageUrl,
+        }));
+
+        // 참가한 이벤트 목록 반영
         setJoinedEvents(json.result.joinedEvents || []);
       });
-  }, [accessToken, API_URL]);
+  }, [API_URL, setUser]);
+
+  // 로그아웃
+  const handleLogout = async () => {
+    try {
+      await apiFetch(`${API_URL}/api/v1/auth/logout`, { method: "POST" });
+      logout();
+      navigate("/");
+    } catch (err) {
+      logout();
+      navigate("/");
+    }
+  };
 
   if (!user) return null;
 
   return (
     <div className="min-h-screen px-4 py-6">
       <div className="max-w-5xl mx-auto">
-        
+
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl" style={{ color: "#000000" }}>
+          <h1 className="text-3xl">
             Even<span style={{ color: "#67594C" }}>Tee</span>
           </h1>
         </div>
 
-        {/* 프로필 섹션 */}
+        {/* 프로필 */}
         <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
@@ -63,7 +78,7 @@ export default function MyPage() {
               </div>
 
               <h2 className="text-2xl" style={{ color: "#67594C" }}>
-                {user.nickname}
+                {user.nickname ?? "사용자"}
               </h2>
             </div>
 
@@ -71,12 +86,10 @@ export default function MyPage() {
               <EventeeButton variant="ghost" className="px-6">
                 프로필 수정
               </EventeeButton>
+
               <EventeeButton
                 variant="ghost"
-                onClick={() => {
-                  logout();
-                  navigate("/");
-                }}
+                onClick={handleLogout}
                 className="px-6"
               >
                 로그아웃
@@ -100,10 +113,7 @@ export default function MyPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {joinedEvents.map((event) => (
-                <div
-                  key={event.eventId}
-                  className="bg-white rounded-2xl shadow-sm overflow-hidden"
-                >
+                <div key={event.eventId} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                   <div className="relative h-48 bg-gray-200">
                     <img
                       src={event.thumbnailUrl}
@@ -117,20 +127,16 @@ export default function MyPage() {
                       {event.title}
                     </h3>
 
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {/* 참가자 프로필 이미지 */}
                         <div className="flex -space-x-2">
-                          {event.participantProfileImages
-                            .slice(0, 3)
-                            .map((img, idx) => (
-                              <img
-                                key={idx}
-                                src={img}
-                                alt="participant"
-                                className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                              />
-                            ))}
+                          {event.participantProfileImages.slice(0, 3).map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img}
+                              className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                            />
+                          ))}
 
                           {event.participantsCount > 3 && (
                             <div
@@ -145,15 +151,12 @@ export default function MyPage() {
                           )}
                         </div>
 
-                        {/* 날짜 */}
-                        <span className="text-sm text-gray-600">
-                          {event.date}
-                        </span>
+                        <span className="text-sm text-gray-600">{event.date}</span>
                       </div>
 
                       <EventeeButton
                         onClick={() => navigate(`/event/${event.eventId}`)}
-                        className="px-6 shrink-0"
+                        className="px-6"
                       >
                         참여하기
                       </EventeeButton>
@@ -164,6 +167,7 @@ export default function MyPage() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
