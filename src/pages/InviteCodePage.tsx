@@ -6,23 +6,38 @@ import { Copy, Check } from "lucide-react";
 export default function InviteCodePage() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const {
     inviteCode = "ABCDEF",
-    title = "케컵업 1조",
-    date,
+    title = "이벤트 제목",
+    startAt,
+    endAt,
     password,
   } = location.state || {};
 
   const [copied, setCopied] = useState(false);
 
+  // 날짜 변환 함수
+  const formatDateTime = (dt: string | undefined) => {
+    if (!dt) return "날짜 정보 없음";
+    return new Date(dt).toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // 초대 문구 (공유용)
   const inviteMessage = `${title}에 초대합니다!
 행사 코드 : ${inviteCode}
+입장 비밀번호 : ${password}
 
-초대받은 행사로 바로가기
-https://eventee.app/join?code=${inviteCode}`;
+아래 링크로 바로 참여해보세요!
+https://www.eventee.cloud/join?code=${inviteCode}`;
 
   const handleCopyInvite = () => {
-    // 클립보드 복사 - 대체 방법 사용
     const textArea = document.createElement("textarea");
     textArea.value = inviteMessage;
     textArea.style.position = "fixed";
@@ -41,16 +56,6 @@ https://eventee.app/join?code=${inviteCode}`;
     }
   };
 
-  const formattedDate = date
-    ? new Date(date).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "2025년 00월 00일 오후 00:00";
-
   return (
     <div className="bg-[#faf9f6] min-h-screen relative">
       {/* EventTee 로고 */}
@@ -60,52 +65,41 @@ https://eventee.app/join?code=${inviteCode}`;
         </p>
       </div>
 
-      {/* 메인 컨텐츠 - 중앙 정렬 */}
+      {/* 메인 컨텐츠 */}
       <div className="flex flex-col items-center justify-center pt-32 pb-16 px-4">
-        {/* 1-2 번호 뱃지 */}
-        <div className="relative mb-4"></div>
-
-        {/* 제목 */}
-        <h1 className="font-['Pretendard:Bold',sans-serif] text-[36px] text-[#67594c] mb-12">
+        <h1 className="font-['Pretendard:Bold'] text-[36px] text-[#67594c] mb-12">
           초대 코드
         </h1>
 
-        {/* 컨텐츠 컨테이너 */}
         <div className="w-full max-w-[850px] space-y-6">
-          {/* 행사 코드 섹션 */}
+          {/* 코드 박스 */}
           <div className="bg-white rounded-[10px] p-8">
-            <h2 className="font-['Pretendard:SemiBold',sans-serif] text-[20px] text-black mb-2">
-              행사 코드
-            </h2>
-
-            <p className="font-['Pretendard:Regular',sans-serif] text-[12px] text-gray-600 mb-6">
-              초대 코드와 문구를 복사해 공유하세요
+            <h2 className="text-[20px] font-semibold mb-2">행사 코드</h2>
+            <p className="text-[12px] text-gray-600 mb-6">
+              초대 코드를 복사해 참여자에게 공유하세요
             </p>
 
-            {/* 초대 코드 표시 영역 */}
-            <div className="bg-neutral-100 rounded-[10px] py-12 flex items-center justify-center">
-              <p className="font-['Poppins:Regular',sans-serif] text-[64px] text-black tracking-wider">
+            <div className="bg-neutral-100 rounded-[10px] py-12 flex items-center justify-center mb-4">
+              <p className="text-[64px] text-black tracking-wider font-mono">
                 {inviteCode}
               </p>
             </div>
-            {/* 안내 문구 */}
-            <div className="text-center space-y-2">
-              <p className="font-['Pretendard:Regular',sans-serif] text-[12px] text-gray-500">
-                유효기간 : {formattedDate}
-              </p>
+
+            {/* 날짜 표시 */}
+            <div className="text-center space-y-1 text-[12px] text-gray-600">
+              <p>시작 : {formatDateTime(startAt)}</p>
+              <p>종료 : {formatDateTime(endAt)}</p>
             </div>
           </div>
-          {/* 여기에 넣기*/}
 
-          {/* 초대 문구 섹션 */}
+          {/* 초대 문구 */}
           <div className="bg-white rounded-[10px] p-8">
             <div className="bg-neutral-100 rounded-[10px] p-8 mb-6">
-              <div className="font-['Pretendard:Regular',sans-serif] text-[14px] text-black whitespace-pre-wrap leading-relaxed">
+              <div className="text-[14px] text-black whitespace-pre-wrap leading-relaxed">
                 {inviteMessage}
               </div>
             </div>
 
-            {/* 초대 문구 복사 버튼 */}
             <div className="flex justify-end">
               <EventeeButton
                 onClick={handleCopyInvite}
@@ -119,9 +113,8 @@ https://eventee.app/join?code=${inviteCode}`;
                   </>
                 ) : (
                   <>
-                    <span className="text-[16px] leading-normal w-full text-center">
-                      초대 문구 복사
-                    </span>
+                    <Copy className="inline-block h-4 w-4" />
+                    초대 문구 복사
                   </>
                 )}
               </EventeeButton>
