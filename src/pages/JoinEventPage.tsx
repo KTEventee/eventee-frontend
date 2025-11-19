@@ -4,6 +4,7 @@ import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { apiFetch } from "../utils/apiFetch"; 
 
 export default function JoinEventPage() {
   const navigate = useNavigate();
@@ -31,12 +32,10 @@ export default function JoinEventPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(
+      // apiFetch로 변경
+      const response = await apiFetch(
         `${API_URL}/api/v1/events/validate?code=${code}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
+        { method: "GET" }
       );
 
       const data = await response.json();
@@ -47,9 +46,15 @@ export default function JoinEventPage() {
         return;
       }
 
+      const upperCode = code.toUpperCase();
+
       // 초대 코드 저장
-      setInviteCode(code.toUpperCase());
-      navigate("/event-password");
+      setInviteCode(upperCode);
+
+      // 비밀번호 입력 페이지로 이동 + state 전달
+      navigate("/event-password", {
+        state: { inviteCode: upperCode },
+      });
 
     } catch (err) {
       setError("서버와 연결할 수 없습니다.");

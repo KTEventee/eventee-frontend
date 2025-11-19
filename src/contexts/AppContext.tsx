@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 export type User = {
-  id: string;
-  nickname: string;
-  email: string;
-  role: 'user' | 'admin' | 'master_admin';
+  id: string | null;
+  nickname: string | null;
+  email: string | null;
+  socialId: string | null;
+  profileImage?: string | null;
+  role: 'user' | 'admin' | 'master_admin' | null;
 };
 
 export type Event = {
@@ -12,21 +14,24 @@ export type Event = {
   title: string;
   description: string;
   inviteCode: string;
-  startDate: Date | null; 
-  endDate: Date | null;    
+  startDate: Date | null;
+  endDate: Date | null;
   createdBy: string;
 };
-
 
 type AppContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
+
   accessToken: string | null;
   setAccessToken: (token: string | null) => void;
+
   currentEvent: Event | null;
   setCurrentEvent: (event: Event | null) => void;
-  inviteCode: string;
-  setInviteCode: (code: string) => void;
+
+  inviteCode: string | null;
+  setInviteCode: (code: string | null) => void;
+
   logout: () => void;
 };
 
@@ -36,13 +41,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [inviteCode, setInviteCode] = useState<string>('');
+
+  // inviteCode 기본값: null
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
 
   const logout = () => {
     setUser(null);
     setAccessToken(null);
     setCurrentEvent(null);
-    setInviteCode('');
+
+
+    setInviteCode(null);
+
+    // localStorage 정리 
+    localStorage.removeItem("accessToken");
   };
 
   return (
@@ -66,7 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 export function useApp() {
   const context = useContext(AppContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;

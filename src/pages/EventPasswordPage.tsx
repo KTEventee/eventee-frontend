@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Lock } from "lucide-react";
+import { apiFetch } from "../utils/apiFetch";  
 
 export default function EventPasswordPage() {
   const navigate = useNavigate();
-  const { inviteCode, setCurrentEvent } = useApp();
+  const location = useLocation();
+  const { inviteCode: ctxInviteCode, setCurrentEvent } = useApp();
+
+  // location.state로 전달된 값
+  const passedInviteCode = location.state?.inviteCode;
+
+  // 최종 inviteCode: state > context > null
+  const inviteCode = passedInviteCode || ctxInviteCode || null;
+
+  console.log("[EventPasswordPage] inviteCode =", inviteCode);
+
+  // 초대코드 없으면 /join-event로 강제 이동
+  useEffect(() => {
+    if (!inviteCode) {
+      navigate("/join-event");
+    }
+  }, [inviteCode, navigate]);
 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,14 +42,18 @@ export default function EventPasswordPage() {
       return;
     }
 
+    if (!inviteCode) {
+      setError("초대 코드가 존재하지 않습니다. 다시 시도해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/events/verify`, {
+      // apiFetch로 변경 (Authorization 자동 포함)
+      const response = await apiFetch(`${API_URL}/api/v1/events/verify`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inviteCode,
           password
@@ -58,7 +79,7 @@ export default function EventPasswordPage() {
         createdBy: data.result.role ?? "PARTICIPANT",
       });
 
-      // 닉네임 입력 페이지로 이동 (state 전달)
+      // signup 페이지로 이동
       navigate("/signup", {
         state: {
           password,
@@ -75,6 +96,9 @@ export default function EventPasswordPage() {
       setLoading(false);
     }
   };
+
+  // inviteCode 없으면 렌더 안 함 (navigate로 이동 중)
+  if (!inviteCode) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

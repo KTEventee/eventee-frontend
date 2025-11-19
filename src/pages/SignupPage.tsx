@@ -5,15 +5,21 @@ import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-
+import { apiFetch } from "../utils/apiFetch"; 
 export default function SignupPage() {
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { inviteCode, setCurrentEvent } = useApp();
-
+  // EventPasswordPage에서 넘어온 값들
   const password = location.state?.password;
+  const passedInviteCode = location.state?.eventCode;
+
+  // Context에서 관리되는 값
+  const { inviteCode: ctxInviteCode, setCurrentEvent } = useApp();
+
+  // 최종 inviteCode: state > context > null
+  const inviteCode = passedInviteCode || ctxInviteCode || null;
 
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
@@ -50,8 +56,8 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      //  환경변수 적용된 절대 API 주소
-      const response = await fetch(`${API_URL}/api/v1/events/join`, {
+      // ★ fetch → apiFetch로 변경
+      const response = await apiFetch(`${API_URL}/api/v1/events/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,18 +77,18 @@ export default function SignupPage() {
         return;
       }
 
-      // 백엔드 result 구조에 맞춰 저장
+      // ★ currentEvent 타입과 맞도록 저장 (Event 타입에 맞게 축약)
       setCurrentEvent({
         id: data.result.eventId,
         title: data.result.title,
         description: data.result.description ?? "",
-        thumbnailUrl: data.result.thumbnailUrl,
-        teamCount: data.result.teamCount,
         inviteCode: inviteCode,
-        role: data.result.role,
-        groups: data.result.groups
+        startDate: null,
+        endDate: null,
+        createdBy: data.result.role ?? "PARTICIPANT",
       });
 
+      // ★ 다음 페이지로 이동
       navigate(nextPage, {
         state: {
           eventId: data.result.eventId,
