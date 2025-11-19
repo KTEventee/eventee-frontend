@@ -35,7 +35,7 @@ export default function InviteCodePage() {
 입장 비밀번호 : ${password}
 
 아래 링크로 바로 참여해보세요!
-https://eventee.app/join?code=${inviteCode}`;
+https://www.eventee.cloud/join?code=${inviteCode}`;
 
   const handleCopyInvite = () => {
     const textArea = document.createElement("textarea");

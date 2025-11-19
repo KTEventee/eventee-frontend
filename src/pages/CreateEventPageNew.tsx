@@ -27,15 +27,13 @@ export default function CreateEventPageNew() {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // LocalDateTime 형태로 변환
   const formatDateTime = (date: Date) => {
-    return date.toISOString().slice(0, 19); // "2025-04-10T12:00:00"
+    return date.toISOString().slice(0, 19);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // --- 유효성 검사 ---
     const newErrors: Record<string, string> = {};
 
     if (!title.trim()) newErrors.title = "행사 제목을 입력해주세요";
@@ -51,7 +49,6 @@ export default function CreateEventPageNew() {
       return;
     }
 
-    // API 요청용 Body
     const body = {
       title,
       description,
@@ -76,13 +73,12 @@ export default function CreateEventPageNew() {
         return;
       }
 
-      // 성공 → 초대코드 페이지로 이동
       navigate("/invite-code", {
         state: {
           inviteCode: json.result.inviteCode,
-          title,
-          startDate,
-          endDate,
+          title: json.result.title,
+          startAt: json.result.startAt,
+          endAt: json.result.endAt,
           password,
         },
       });
@@ -94,14 +90,14 @@ export default function CreateEventPageNew() {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen relative">
-      {/* EventTee 로고 */}
+      {/* 로고 */}
       <div className="absolute left-12 top-8">
         <p className="text-[30px] font-bold">
           Even<span className="text-[#67594c]">Tee</span>
         </p>
       </div>
 
-      {/* 뒤로가기 버튼 */}
+      {/* 뒤로가기 */}
       <div className="absolute right-12 top-8">
         <button
           onClick={() => navigate("/mypage")}
@@ -112,9 +108,9 @@ export default function CreateEventPageNew() {
         </button>
       </div>
 
-      {/* 메인 컨텐츠 */}
+      {/* 본문 */}
       <div className="flex flex-col items-center justify-center pt-32 pb-16 px-4">
-        <h1 className="font-['Pretendard:Bold',sans-serif] text-[36px] text-[#67594c] mb-12">
+        <h1 className="font-['Pretendard:Bold'] text-[36px] text-[#67594c] mb-12">
           이벤트 생성
         </h1>
 
@@ -124,7 +120,7 @@ export default function CreateEventPageNew() {
             <div className="flex gap-4">
               {/* 제목 */}
               <div className="flex-1">
-                <label className="block text-[12px] text-black mb-2">
+                <label className="block text-[12px] mb-2">
                   제목 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -134,11 +130,13 @@ export default function CreateEventPageNew() {
                     setErrors({ ...errors, title: "" });
                   }}
                   placeholder="행사 제목을 입력하세요"
-                  className={`bg-white h-[51px] rounded-[15px] border-0 text-[12px] ${
+                  className={`bg-white h-[51px] rounded-[15px] text-[12px] ${
                     errors.title ? "ring-2 ring-red-500" : ""
                   }`}
                 />
-                {errors.title && <p className="text-red-500 text-[11px]">{errors.title}</p>}
+                {errors.title && (
+                  <p className="text-red-500 text-[11px]">{errors.title}</p>
+                )}
               </div>
 
               {/* 시작 날짜 */}
@@ -160,7 +158,13 @@ export default function CreateEventPageNew() {
                         : "시작 날짜를 선택하세요"}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    className="w-auto p-0 z-[9999]"
+                    style={{ overflow: "visible" }}
+                  >
                     <Calendar
                       mode="single"
                       selected={startDate}
@@ -190,10 +194,18 @@ export default function CreateEventPageNew() {
                         errors.endDate ? "ring-2 ring-red-500" : ""
                       }`}
                     >
-                      {endDate ? endDate.toLocaleDateString("ko-KR") : "종료 날짜를 선택하세요"}
+                      {endDate
+                        ? endDate.toLocaleDateString("ko-KR")
+                        : "종료 날짜를 선택하세요"}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    className="w-auto p-0 z-[9999]"
+                    style={{ overflow: "visible" }}
+                  >
                     <Calendar
                       mode="single"
                       selected={endDate}
@@ -212,12 +224,10 @@ export default function CreateEventPageNew() {
 
             {/* 비밀번호 + 팀 수 */}
             <div className="flex gap-4">
-              {/* 비밀번호 */}
               <div className="flex-1">
                 <label className="block text-[12px] mb-2">
                   비밀번호 <span className="text-red-500">*</span>
                 </label>
-
                 <Input
                   type="password"
                   value={password}
@@ -230,16 +240,15 @@ export default function CreateEventPageNew() {
                     errors.password ? "ring-2 ring-red-500" : ""
                   }`}
                 />
-
-                {errors.password && <p className="text-red-500 text-[11px]">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-red-500 text-[11px]">{errors.password}</p>
+                )}
               </div>
 
-              {/* 팀 수 */}
               <div className="w-[266px]">
                 <label className="block text-[12px] mb-2">
                   팀 개수 <span className="text-gray-400 text-[10px]">(선택)</span>
                 </label>
-
                 <Input
                   type="number"
                   value={teamCount}
@@ -250,12 +259,11 @@ export default function CreateEventPageNew() {
               </div>
             </div>
 
-            {/* 내용 */}
+            {/* 설명 */}
             <div>
               <label className="block text-[12px] mb-2">
                 내용 <span className="text-red-500">*</span>
               </label>
-
               <Textarea
                 value={description}
                 onChange={(e) => {
@@ -267,13 +275,12 @@ export default function CreateEventPageNew() {
                   errors.description ? "ring-2 ring-red-500" : ""
                 }`}
               />
-
               {errors.description && (
                 <p className="text-red-500 text-[11px]">{errors.description}</p>
               )}
             </div>
 
-            {/* 버튼 */}
+            {/* 제출 버튼 */}
             <div className="pt-12">
               <EventeeButton type="submit" className="w-full">
                 행사 생성하기
