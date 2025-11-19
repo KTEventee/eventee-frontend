@@ -1,7 +1,7 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     "./index.html",
+    "./public/index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "./App.tsx",
     "./components/**/*.{js,ts,jsx,tsx}",
@@ -10,11 +10,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        border: "hsl(240 5% 84%)",
+        input: "hsl(240 5% 84%)",
+        ring: "hsl(240 5% 64%)",
+        background: "hsl(0 0% 100%)",
+        foreground: "hsl(240 10% 3.9%)",
         primary: {
           DEFAULT: "var(--primary)",
           foreground: "var(--primary-foreground)",

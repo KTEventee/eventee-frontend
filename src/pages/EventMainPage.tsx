@@ -31,7 +31,7 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { is } from "date-fns/locale";
-
+//test용
 type Comment = {
   id: string;
   author: string;
@@ -75,6 +75,7 @@ export default function EventMainPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
+  const origin = "http://localhost:8080";
 
   // 이벤트 정보 (EventPasswordPage에서 전달받음)
   const eventTitle = location.state?.eventTitle || "이벤트";
@@ -82,7 +83,7 @@ export default function EventMainPage() {
   
   //todo event 읽어와야할 필요가 있음
   const eventId = location.state?.eventId || 7;
-  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNDg2NDI0LCJleHAiOjE3NjM0ODgyMjR9.X3BbqvGjLGcnDsLXeT2Wn3uiLn9P3nesAfgD3k2gJfIzB17NF7ouzikeZbqOmjF-4ElISR0pKaDh-3FG-FwFyw";
+  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNTIyNTMzLCJleHAiOjE3NjM1MjQzMzN9.4XL4gbtxWbW3wJPJkJiDzgV47_DWOaA1wlXkRjc8LeTGiAVov9PnHikWCVgdxq28belpKWnNj__XMS7ItAgU9w";
 
   console.log("eventId:"+eventId);
 
@@ -93,7 +94,7 @@ export default function EventMainPage() {
 
     try {
       // API 요청
-      const res = await fetch(`http://localhost:8080/api/v1/group/${eventId}`, {
+      const res = await fetch(origin+`/api/v1/group/${eventId}`, {
         method: "GET",
          headers: {
           "Authorization": `Bearer ${token}`
@@ -169,7 +170,7 @@ export default function EventMainPage() {
   const loadPostsForTeams = async (teamsArg?: Team[]) => {
     console.log("loadPostsForTeams 실행");
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/post/${eventId}`, {
+      const res = await fetch(origin+`/api/v1/post/${eventId}`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -248,7 +249,7 @@ const handleUpdatePost = async (
           : null,
     };
 
-    const res = await fetch(`http://localhost:8080/api/v1/post`, {
+    const res = await fetch(origin+`/api/v1/post`, {
       method: "PATCH",
       headers: {
           "Authorization": `Bearer ${token}`
@@ -366,7 +367,7 @@ const handleUpdatePost = async (
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/post", {
+      const res = await fetch(origin+"/api/v1/post", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -409,7 +410,7 @@ const handleUpdatePost = async (
       content: commentText,
     };
 
-    const res = await fetch("http://localhost:8080/api/v1/comment", {
+    const res = await fetch(origin+"/api/v1/comment", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -440,7 +441,7 @@ const handleDeleteComment = async (
   commentId: string,
 ) => {
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/comment/${commentId}`, {
+    const res = await fetch(origin+`/api/v1/comment/${commentId}`, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${token}`,
