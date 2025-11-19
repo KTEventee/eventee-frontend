@@ -32,7 +32,6 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { is } from "date-fns/locale";
 
-// Mock 데이터
 type Comment = {
   id: string;
   author: string;
