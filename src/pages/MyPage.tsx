@@ -10,6 +10,9 @@ type JoinedEvent = {
   eventId: number;
   title: string;
   thumbnailUrl: string;
+  inviteCode: string;
+  startAt: string;
+  endAt: string;
   participantsCount: number;
   participantProfileImages: string[];
   date: string;
@@ -47,9 +50,7 @@ export default function MyPage() {
   const handleLogout = async () => {
     try {
       await apiFetch(`${API_URL}/api/v1/auth/logout`, { method: "POST" });
-      logout();
-      navigate("/");
-    } catch (err) {
+    } finally {
       logout();
       navigate("/");
     }
@@ -75,8 +76,6 @@ export default function MyPage() {
 
               {/* 프로필 이미지 + 닉네임 */}
               <div className="flex items-center gap-6">
-
-                {/* 프로필 이미지 표시 */}
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-[#D2CDBC] flex items-center justify-center">
                   {user.profileImageUrl ? (
                     <img
@@ -182,13 +181,25 @@ export default function MyPage() {
                           </div>
 
                           <span className="text-sm text-gray-600">
-                            {event.date}
+                            {event.startAt?.split("T")[0]} ~ {event.endAt?.split("T")[0]}
                           </span>
+
                         </div>
 
+                        {/* 참여하기 → 비밀번호 입력 페이지 이동 */}
                         <EventeeButton
-                          onClick={() => navigate(`/event/${event.eventId}`)}
                           className="px-6"
+                          onClick={() =>
+                            navigate("/event-password", {
+                              state: {
+                                inviteCode: event.inviteCode,
+                                eventId: event.eventId,
+                                title: event.title,
+                                startAt: event.startAt,
+                                endAt: event.endAt,
+                              },
+                            })
+                          }
                         >
                           참여하기
                         </EventeeButton>
