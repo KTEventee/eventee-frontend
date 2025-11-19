@@ -50,7 +50,7 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      // 🔥 환경변수 적용된 절대 API 주소
+      //  환경변수 적용된 절대 API 주소
       const response = await fetch(`${API_URL}/api/v1/events/join`, {
         method: "POST",
         headers: {
