@@ -60,6 +60,7 @@ type Post = {
   pollQuestion?: string;
   userVote?: string; // 사용자가 투표한 옵션 ID
   isWrite: boolean;
+  pollUsesPercent?: boolean;
 };
 
 type Team = {
@@ -83,7 +84,7 @@ export default function EventMainPage() {
   
   //todo event 읽어와야할 필요가 있음
   const eventId = location.state?.eventId || 7;
-  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNTIyNTMzLCJleHAiOjE3NjM1MjQzMzN9.4XL4gbtxWbW3wJPJkJiDzgV47_DWOaA1wlXkRjc8LeTGiAVov9PnHikWCVgdxq28belpKWnNj__XMS7ItAgU9w";
+  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNTI0MjY1LCJleHAiOjE3NjM1MjYwNjV9.EwiwMVoBLsLDjvRWxplT7zH2XitUFvFu5lo1LYVl-8lR3hI19yO_B3wVOacg9g3iIEyAsAImvq4hT-vk_77hlw";
 
   console.log("eventId:"+eventId);
 
@@ -170,18 +171,17 @@ export default function EventMainPage() {
   const loadPostsForTeams = async (teamsArg?: Team[]) => {
     console.log("loadPostsForTeams 실행");
     try {
-      const res = await fetch(origin+`/api/v1/post/${eventId}`, {
+      const res = await fetch(origin + `/api/v1/post/${eventId}`, {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          "Authorization": `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
       if (!data.isSuccess) return;
 
       const postGroups = data.result.lists;
-
       const baseTeams = teamsArg ?? teams;
 
       const updatedTeams = baseTeams.map((team) => {
@@ -190,32 +190,85 @@ export default function EventMainPage() {
         );
         if (!found) return team;
 
-        const convertedPosts: Post[] = found.posts.map((p: any) => ({
-          id: String(p.postId),
-          author: p.writerName,
-          content: p.content,
-          type: p.type === "vote" ? "vote" : "text",
-          pollQuestion: p.voteTitle,
-          pollOptions: p.voteContent
-            ? p.voteContent.split("_").map((opt: string, idx: number) => ({
+        const convertedPosts: Post[] = found.posts.map((p: any) => {
+          // 서버가 VoteLogResponseDto 형태로 보낼 때 처리
+          const voteResp =
+            p.votedLogs ??
+            p.voteLogResponse ??
+            p.voteLogResponseDto ??
+            null;
+
+          // pollOptions 구성
+          let pollOptions: PollOption[] | undefined;
+          if (p.voteContent) {
+            const opts = p.voteContent.split("_");
+            // 서버가 op1Percent/op2Percent를 줄 경우 퍼센트로 표시
+            if (voteResp && typeof voteResp === "object" && typeof voteResp.op1Percent === "number") {
+              const op1 = Math.round(Number(voteResp.op1Percent ?? 0));
+              const op2 = Math.round(Number(voteResp.op2Percent ?? 0));
+              pollOptions = [
+                { id: "opt1", text: opts[0] ?? "옵션1", votes: op1 },
+                { id: "opt2", text: opts[1] ?? "옵션2", votes: op2 },
+              ];
+            } else if (Array.isArray(p.votedLogs)) {
+              // 혹시 이전 형태(배열)인 경우에 대비
+              pollOptions = opts.map((opt: string, idx: number) => ({
                 id: `opt${idx + 1}`,
                 text: opt,
-                votes: p.votedLogs
-                  ? p.votedLogs.filter((log: any) => log.optionIndex === idx).length
-                  : 0,
-              }))
-            : undefined,
-          userVote: undefined,
-          likes: 0,
-          isLiked: false,
-          comments: p.comments.map((c: any) => ({
-            id: c.commentId,
-            author: c.writer,
-            content: c.content,
-            timestamp: c.createdAt,
-            isWrite: c.isWrite,
-          })),
-        }));
+                votes: p.votedLogs.filter((log: any) => log.optionIndex === idx || log.voteNum === idx + 1).length,
+              }));
+            } else {
+              // 그 외에는 0으로 초기화
+              pollOptions = opts.map((opt: string, idx: number) => ({
+                id: `opt${idx + 1}`,
+                text: opt,
+                votes: 0,
+              }));
+            }
+          } else {
+            pollOptions = undefined;
+          }
+
+          // userVote 결정: isVote가 true일 때만 voteNum을 사용
+          let userVoteVal: string | undefined = undefined;
+          if (voteResp && typeof voteResp === "object" && voteResp.isVote === true) {
+            const voteNum =
+              voteResp.voteNum ??
+              voteResp.voteNUm ?? // possible typo
+              voteResp.myVoteNum ??
+              voteResp.myVote ??
+              null;
+            if (typeof voteNum === "number" || (!isNaN(Number(voteNum)) && voteNum !== null)) {
+              userVoteVal = `opt${Number(voteNum)}`;
+            } else {
+              userVoteVal = "voted";
+            }
+          }
+          
+          const pollUsesPercent = Boolean(voteResp && typeof voteResp === "object" && (voteResp.op1Percent !== undefined || voteResp.op2Percent !== undefined));
+          
+          return {
+            id: String(p.postId),
+            author: p.writerName,
+            content: p.content,
+            type: p.type === "vote" ? "vote" : "text",
+            pollQuestion: p.voteTitle,
+            pollOptions,
+            userVote: userVoteVal,
+            pollUsesPercent,
+            likes: 0,
+            isLiked: false,
+            isWrite: p.isWrite ?? false,
+            comments: (p.comments ?? []).map((c: any) => ({
+              id: String(c.commentId ?? c.id),
+              author: c.writerName ?? c.writer,
+              content: c.content,
+              timestamp: c.createdAt,
+              imageUrl: c.imageUrl ?? undefined,
+              isWrite: c.isWrite ?? false,
+            })),
+          } as Post;
+        });
 
         return { ...team, posts: convertedPosts };
       });
@@ -270,33 +323,48 @@ const handleUpdatePost = async (
     // 변환 → 기존 loadPosts 로직과 동일하게
     // ------------------------------
     const convertedPost: Post = {
-      id: String(updated.postId),
-      author: updated.writerName,
-      content: updated.content,
+        id: String(updated.postId),
+        author: updated.writerName,
+        content: updated.content,
 
-      likes: 0,
-      isLiked: false,
-      isWrite:updated.isWrite,
+        likes: 0,
+        isLiked: false,
+        isWrite: updated.isWrite,
 
-      type: updated.type === "vote" ? "vote" : "text",
-      pollQuestion: updated.voteTitle,
-      pollOptions: updated.voteContent
-        ? updated.voteContent.split("_").map((opt: string, idx: number) => ({
-            id: `opt${idx + 1}`,
-            text: opt,
-            votes: updated.votedLogs.filter(
-              (log: any) => log.optionIndex === idx
-            ).length,
-          }))
-        : undefined,
+        type: updated.type === "vote" ? "vote" : "text",
+        pollQuestion: updated.voteTitle,
+        pollOptions: (() => {
+          // updated.votedLogs 는 VoteLogResponseDto일 수 있음
+          const voteResp =
+            updated.votedLogs ?? updated.voteLogResponse ?? updated.voteLogResponseDto ?? null;
 
-      comments: updated.comments.map((c: any) => ({
-        id: c.commentId,
-        author: c.writerName,
-        content: c.content,
-        timestamp: new Date().toISOString(),
-      })),
-    };
+          if (updated.voteContent) {
+            const opts = updated.voteContent.split("_");
+            if (voteResp && typeof voteResp === "object" && typeof voteResp.op1Percent === "number") {
+              return [
+                { id: "opt1", text: opts[0] ?? "옵션1", votes: Math.round(Number(voteResp.op1Percent ?? 0)) },
+                { id: "opt2", text: opts[1] ?? "옵션2", votes: Math.round(Number(voteResp.op2Percent ?? 0)) },
+              ];
+            } else if (Array.isArray(updated.votedLogs)) {
+              return opts.map((opt: string, idx: number) => ({
+                id: `opt${idx + 1}`,
+                text: opt,
+                votes: updated.votedLogs.filter((log: any) => log.optionIndex === idx || log.voteNum === idx + 1).length,
+              }));
+            } else {
+              return opts.map((opt: string, idx: number) => ({ id: `opt${idx + 1}`, text: opt, votes: 0 }));
+            }
+          }
+          return undefined;
+        })(),
+
+        comments: (updated.comments ?? []).map((c: any) => ({
+          id: c.commentId,
+          author: c.writerName,
+          content: c.content,
+          timestamp: new Date().toISOString(),
+        })),
+      };
 
     // ------------------------------
     // teams 상태에서 해당 post만 교체
@@ -468,44 +536,92 @@ const handleDeleteComment = async (
     setCommentInputs({ ...commentInputs, [postId]: value });
   };
 
-  const handleVote = (
-    teamId: string,
-    postId: string,
-    optionId: string,
+  const handleVote = async (
+  teamId: string,
+  postId: string,
+  optionId: string,
   ) => {
-    // TODO: API 호출
-    // POST /api/events/:eventCode/posts/:postId/vote
-    // body: { optionId: optionId }
+    // 현재 포스트 찾기
+    const team = teams.find((t) => t.id === teamId);
+    const post = team?.posts.find((p) => p.id === postId);
+    if (!post || !post.pollOptions) return;
 
-    setTeams(
-      teams.map((team) => {
-        if (team.id === teamId) {
-          return {
-            ...team,
-            posts: team.posts.map((post) => {
-              if (post.id === postId && post.pollOptions) {
-                const oldVote = post.userVote;
+    // 이미 투표한 상태면 무시 (중복 선택 방지)
+    if (post.userVote) {
+      console.log("이미 투표되어 있음, 추가 투표 불가:", post.userVote);
+      return;
+    }
+
+    // 낙관적 업데이트를 위한 백업
+    const prevTeams = teams;
+
+    // 낙관적 UI 업데이트: pollUsesPercent면 퍼센트 직접 변경하지 않고 userVote만 설정
+    setTeams((prev) =>
+      prev.map((t) =>
+        t.id === teamId
+          ? {
+              ...t,
+              posts: t.posts.map((p) => {
+                if (p.id !== postId) return p;
                 return {
-                  ...post,
+                  ...p,
                   userVote: optionId,
-                  pollOptions: post.pollOptions.map((opt) => {
-                    if (opt.id === optionId) {
-                      return { ...opt, votes: opt.votes + 1 };
-                    } else if (opt.id === oldVote) {
-                      return { ...opt, votes: opt.votes - 1 };
-                    }
-                    return opt;
-                  }),
+                   pollOptions: Array.isArray(p.pollOptions)
+                    ? p.pollUsesPercent
+                      ? p.pollOptions // 퍼센트 기반이면 그대로
+                      : p.pollOptions.map((opt) =>
+                          opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt,
+                        )
+                    : p.pollOptions,
                 };
-              }
-              return post;
-            }),
-          };
-        }
-        return team;
-      }),
+              }),
+            }
+          : t,
+      ),
     );
+
+  // voteText 결정 (옵션 텍스트 우선, 없으면 optN -> N)
+  const option = post.pollOptions.find((o) => o.id === optionId);
+  let voteText = option?.text ?? optionId;
+  const m = /^opt(\d+)$/.exec(optionId);
+  if (!option?.text && m) voteText = m[1];
+
+  const body = {
+    postId: Number(postId),
+    voteText,
   };
+
+  try {
+    const res = await fetch(origin + "/api/v1/post/vote", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("투표 HTTP 오류:", res.status, txt);
+      setTeams(prevTeams); // 롤백
+      return;
+    }
+
+    const data = await res.json();
+    if (!data.isSuccess) {
+      console.error("투표 실패:", data.message, data);
+      setTeams(prevTeams); // 롤백
+      return;
+    }
+
+    // 서버의 최신 투표 로그/퍼센트로 재로딩하여 정확히 반영
+    await loadPostsForTeams();
+  } catch (err) {
+    console.error("투표 API 오류:", err);
+    setTeams(prevTeams); // 롤백
+  }
+};
 
   return (
     <div className="h-screen flex flex-col">
