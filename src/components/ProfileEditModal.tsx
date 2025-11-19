@@ -42,16 +42,13 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       return;
     }
 
-    setUser((prev) => ({ ...(prev || {}), nickname: json.result }));
+    setUser(prev => ({ ...(prev || {}), nickname: json.result }));
     alert("닉네임이 변경되었습니다.");
   };
 
   // 프로필 이미지 업로드
   const handleUploadImage = async () => {
-    if (!file) {
-      alert("변경할 이미지를 선택해주세요.");
-      return;
-    }
+    if (!file) return alert("변경할 이미지를 선택해주세요.");
 
     console.log("=== [UPLOAD START] ===");
     console.log("file:", file);
@@ -83,12 +80,18 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
 
       const { url, key } = presignedJson.result;
 
-      // S3 업로드
-      await fetch(url, {
+      // S3 PUT 업로드
+      const uploadResponse = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
       });
+
+      if (!uploadResponse.ok) {
+        console.error("S3 업로드 실패:", uploadResponse);
+        alert("S3 업로드 실패");
+        return;
+      }
 
       // 업로드 확정
       const confirm = await apiFetch(
@@ -111,7 +114,7 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
         return;
       }
 
-      setUser((prev) => ({
+      setUser(prev => ({
         ...(prev || {}),
         profileImageUrl: confirmJson.result,
       }));
@@ -121,7 +124,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
 
     } catch (err) {
       console.error("예외 발생:", err);
-
     } finally {
       setLoading(false);
     }
@@ -133,14 +135,14 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       const res = await apiFetch(`${API_URL}/api/v1/member/profile-image`, {
         method: "DELETE",
       });
-      const json = await res.json();
 
+      const json = await res.json();
       if (!json.isSuccess) {
         alert(json.message ?? "프로필 이미지 삭제 실패");
         return;
       }
 
-      setUser((prev) => ({
+      setUser(prev => ({
         ...(prev || {}),
         profileImageUrl: null,
       }));
@@ -168,7 +170,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
           />
 
           <button
-            type="button"
             onClick={handleNicknameUpdate}
             className="mt-2 w-full bg-[#67594C] text-white py-2 rounded-lg"
           >
@@ -176,7 +177,7 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
           </button>
         </div>
 
-
+        {/* 프로필 이미지 */}
         <div className="mb-5">
           <label className="text-sm text-gray-600 mb-2 block">프로필 이미지</label>
 
@@ -188,7 +189,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
           />
 
           <button
-            type="button"
             onClick={handleUploadImage}
             className="w-full bg-[#67594C] text-white py-2 rounded-lg mb-2"
             disabled={loading}
@@ -197,7 +197,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
           </button>
 
           <button
-            type="button"
             onClick={handleDeleteImage}
             className="w-full border border-red-400 text-red-500 py-2 rounded-lg"
           >
@@ -206,7 +205,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
         </div>
 
         <button
-          type="button"
           onClick={onClose}
           className="w-full mt-4 bg-gray-200 py-2 rounded-lg hover:bg-gray-300"
         >
