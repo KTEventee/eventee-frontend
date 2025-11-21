@@ -12,19 +12,11 @@ export default function EventPasswordPage() {
   const location = useLocation();
   const { inviteCode: ctxInviteCode, setCurrentEvent } = useApp();
 
-  // location.state로 전달된 값
   const passedInviteCode = location.state?.inviteCode;
-
-  // 최종 inviteCode: state > context > null
   const inviteCode = passedInviteCode || ctxInviteCode || null;
 
-  console.log("[EventPasswordPage] inviteCode =", inviteCode);
-
-  // 초대코드 없으면 /join-event로 강제 이동
   useEffect(() => {
-    if (!inviteCode) {
-      navigate("/join-event");
-    }
+    if (!inviteCode) navigate("/join-event");
   }, [inviteCode, navigate]);
 
   const [password, setPassword] = useState("");
@@ -50,14 +42,10 @@ export default function EventPasswordPage() {
     setLoading(true);
 
     try {
-      // apiFetch로 변경 (Authorization 자동 포함)
       const response = await apiFetch(`${API_URL}/api/v1/events/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inviteCode,
-          password
-        }),
+        body: JSON.stringify({ inviteCode, password }),
       });
 
       const data = await response.json();
@@ -68,18 +56,16 @@ export default function EventPasswordPage() {
         return;
       }
 
-      // 이벤트 정보 저장
       setCurrentEvent({
         id: data.result.eventId,
         title: data.result.title,
         description: data.result.description ?? "",
-        inviteCode: inviteCode,
+        inviteCode,
         startDate: null,
         endDate: null,
         createdBy: data.result.role ?? "PARTICIPANT",
       });
 
-      // signup 페이지로 이동
       navigate("/signup", {
         state: {
           password,
@@ -97,32 +83,44 @@ export default function EventPasswordPage() {
     }
   };
 
-  // inviteCode 없으면 렌더 안 함 (navigate로 이동 중)
   if (!inviteCode) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="absolute left-12 top-8">
-        <p className="text-[30px] font-bold">
-          Even<span className="text-[#67594c]">Tee</span>
-        </p>
+    <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center px-4 relative">
+
+      {/* 로고 */}
+      <div className="absolute left-10 top-10">
+        <h1 className="text-[30px] font-bold tracking-tight">
+          Even<span className="text-[#67594C]">Tee</span>
+        </h1>
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <Lock className="h-8 w-8 text-blue-600" />
+      <div className="w-full max-w-md pt-16">
+
+        {/* 헤더 */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#EDEAE5] rounded-full shadow-inner mb-5">
+            <Lock className="h-10 w-10 text-[#67594C]" />
           </div>
-          <h1 className="text-3xl mb-2">이벤트 비밀번호</h1>
-          <p className="text-gray-600">
-            초대 코드: <span className="font-mono">{inviteCode}</span>
+
+          <h1 className="text-[28px] font-semibold text-[#67594C] mb-1 tracking-tight">
+            이벤트 비밀번호
+          </h1>
+
+          <p className="text-gray-600 text-sm">
+            초대 코드 : <span className="font-mono text-[#67594C]">{inviteCode}</span>
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
+        {/* 비밀번호 입력 카드 */}
+        <div className="bg-white rounded-3xl shadow-sm p-10 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
+
             <div>
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password" className="text-[#4A4A4A]">
+                비밀번호
+              </Label>
+
               <Input
                 id="password"
                 type="password"
@@ -132,19 +130,25 @@ export default function EventPasswordPage() {
                   setPassword(e.target.value);
                   setError("");
                 }}
-                className="mt-2 h-[59px]"
+                className="mt-2 h-[56px] text-[16px]"
                 disabled={loading}
               />
+
               {error && (
                 <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
             </div>
 
-            <EventeeButton type="submit" className="w-full" disabled={loading}>
+            <EventeeButton
+              type="submit"
+              className="w-full h-[56px] text-[16px]"
+              disabled={loading}
+            >
               {loading ? "확인 중..." : "다음으로"}
             </EventeeButton>
           </form>
         </div>
+
       </div>
     </div>
   );

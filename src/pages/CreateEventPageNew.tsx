@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { Calendar } from "../components/ui/calendar";
+
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+
 import {
   Popover,
   PopoverContent,
@@ -21,10 +24,11 @@ export default function CreateEventPageNew() {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [teamCount, setTeamCount] = useState("");
+
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const API_URL = import.meta.env.VITE_API_URL;
 
   const formatDateTime = (date: Date) => {
@@ -66,7 +70,6 @@ export default function CreateEventPageNew() {
       });
 
       const json = await res.json();
-      console.log(json);
 
       if (!json.isSuccess) {
         alert("이벤트 생성 실패: " + (json.message || ""));
@@ -89,38 +92,39 @@ export default function CreateEventPageNew() {
   };
 
   return (
-    <div className="bg-[#faf9f6] min-h-screen relative">
+    <div className="bg-[#FAF9F6] min-h-screen relative">
       {/* 로고 */}
-      <div className="absolute left-12 top-8">
-        <p className="text-[30px] font-bold">
-          Even<span className="text-[#67594c]">Tee</span>
+      <div className="absolute left-10 top-10">
+        <p className="text-[30px] font-bold tracking-tight">
+          Even<span className="text-[#67594C]">Tee</span>
         </p>
       </div>
 
       {/* 뒤로가기 */}
-      <div className="absolute right-12 top-8">
+      <div className="absolute right-10 top-10">
         <button
           onClick={() => navigate("/my-page")}
           className="p-2 hover:bg-white/50 rounded-lg transition-colors"
           type="button"
         >
-          <ArrowLeft className="w-5 h-5" style={{ color: "#67594C" }} />
+          <ArrowLeft className="w-6 h-6" style={{ color: "#67594C" }} />
         </button>
       </div>
 
-      {/* 본문 */}
+      {/* 메인 콘텐츠 */}
       <div className="flex flex-col items-center justify-center pt-32 pb-16 px-4">
-        <h1 className="font-['Pretendard:Bold'] text-[36px] text-[#67594c] mb-12">
+        <h1 className="text-[32px] font-semibold text-[#67594C] mb-12 tracking-tight">
           이벤트 생성
         </h1>
 
         <form onSubmit={handleSubmit} className="w-full max-w-[850px]">
-          <div className="space-y-6">
-            {/* 제목 + 날짜 */}
+          <div className="bg-white p-10 rounded-3xl shadow-md border border-gray-100 space-y-8">
+
+            {/* 제목 / 날짜 */}
             <div className="flex gap-4">
               {/* 제목 */}
               <div className="flex-1">
-                <label className="block text-[12px] mb-2">
+                <label className="block text-[13px] font-medium mb-2 text-[#4a4a4a]">
                   제목 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -130,18 +134,18 @@ export default function CreateEventPageNew() {
                     setErrors({ ...errors, title: "" });
                   }}
                   placeholder="행사 제목을 입력하세요"
-                  className={`bg-white h-[51px] rounded-[15px] text-[12px] ${
-                    errors.title ? "ring-2 ring-red-500" : ""
+                  className={`h-[54px] rounded-xl bg-[#FDFDFC] text-[14px] ${
+                    errors.title && "ring-2 ring-red-500"
                   }`}
                 />
                 {errors.title && (
-                  <p className="text-red-500 text-[11px]">{errors.title}</p>
+                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
                 )}
               </div>
 
               {/* 시작 날짜 */}
-              <div className="w-[266px]">
-                <label className="block text-[12px] mb-2">
+              <div className="w-[260px]">
+                <label className="block text-[13px] font-medium mb-2 text-[#4a4a4a]">
                   시작 날짜 <span className="text-red-500">*</span>
                 </label>
 
@@ -149,40 +153,38 @@ export default function CreateEventPageNew() {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className={`w-full bg-white h-[51px] rounded-[15px] px-4 text-left text-[12px] ${
-                        errors.startDate ? "ring-2 ring-red-500" : ""
+                      className={`w-full h-[54px] bg-[#FDFDFC] rounded-xl px-4 text-left text-[14px] ${
+                        errors.startDate && "ring-2 ring-red-500"
                       }`}
                     >
                       {startDate
                         ? startDate.toLocaleDateString("ko-KR")
-                        : "시작 날짜를 선택하세요"}
+                        : "시작 날짜 선택"}
                     </button>
                   </PopoverTrigger>
 
-                  <PopoverContent
-                    side="bottom"
-                    align="start"
-                    className="w-auto p-0 z-[9999]"
-                    style={{ overflow: "visible" }}
-                  >
-                    <Calendar
+                  <PopoverContent className="p-0 w-[320px] z-[9999] rounded-xl shadow-lg bg-white">
+                    <DayPicker
                       mode="single"
                       selected={startDate}
-                      onSelect={(newDate) => {
-                        setStartDate(newDate);
+                      onSelect={(day) => {
+                        setStartDate(day ?? undefined);
                         setShowStartCalendar(false);
                         setErrors({ ...errors, startDate: "" });
                       }}
+                      numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>
 
-                {errors.startDate && <p className="text-red-500 text-[11px]">{errors.startDate}</p>}
+                {errors.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
+                )}
               </div>
 
               {/* 종료 날짜 */}
-              <div className="w-[266px]">
-                <label className="block text-[12px] mb-2">
+              <div className="w-[260px]">
+                <label className="block text-[13px] font-medium mb-2 text-[#4a4a4a]">
                   종료 날짜 <span className="text-red-500">*</span>
                 </label>
 
@@ -190,42 +192,40 @@ export default function CreateEventPageNew() {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className={`w-full bg-white h-[51px] rounded-[15px] px-4 text-left text-[12px] ${
-                        errors.endDate ? "ring-2 ring-red-500" : ""
+                      className={`w-full h-[54px] bg-[#FDFDFC] rounded-xl px-4 text-left text-[14px] ${
+                        errors.endDate && "ring-2 ring-red-500"
                       }`}
                     >
                       {endDate
                         ? endDate.toLocaleDateString("ko-KR")
-                        : "종료 날짜를 선택하세요"}
+                        : "종료 날짜 선택"}
                     </button>
                   </PopoverTrigger>
 
-                  <PopoverContent
-                    side="bottom"
-                    align="start"
-                    className="w-auto p-0 z-[9999]"
-                    style={{ overflow: "visible" }}
-                  >
-                    <Calendar
+                  <PopoverContent className="p-0 w-[320px] z-[9999] rounded-xl shadow-lg bg-white">
+                    <DayPicker
                       mode="single"
                       selected={endDate}
-                      onSelect={(newDate) => {
-                        setEndDate(newDate);
+                      onSelect={(day) => {
+                        setEndDate(day ?? undefined);
                         setShowEndCalendar(false);
                         setErrors({ ...errors, endDate: "" });
                       }}
+                      numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>
 
-                {errors.endDate && <p className="text-red-500 text-[11px]">{errors.endDate}</p>}
+                {errors.endDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>
+                )}
               </div>
             </div>
 
             {/* 비밀번호 + 팀 수 */}
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-[12px] mb-2">
+                <label className="block text-[13px] mb-2 font-medium text-[#4a4a4a]">
                   비밀번호 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -236,32 +236,32 @@ export default function CreateEventPageNew() {
                     setErrors({ ...errors, password: "" });
                   }}
                   placeholder="비밀번호를 입력하세요"
-                  className={`bg-white h-[51px] rounded-[15px] text-[12px] ${
-                    errors.password ? "ring-2 ring-red-500" : ""
+                  className={`bg-[#FDFDFC] h-[54px] rounded-xl text-[14px] ${
+                    errors.password && "ring-2 ring-red-500"
                   }`}
                 />
                 {errors.password && (
-                  <p className="text-red-500 text-[11px]">{errors.password}</p>
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                 )}
               </div>
 
-              <div className="w-[266px]">
-                <label className="block text-[12px] mb-2">
-                  팀 개수 <span className="text-gray-400 text-[10px]">(선택)</span>
+              <div className="w-[260px]">
+                <label className="block text-[13px] mb-2 font-medium text-[#4a4a4a]">
+                  팀 개수 <span className="text-gray-400 text-[11px]">(선택)</span>
                 </label>
                 <Input
                   type="number"
                   value={teamCount}
                   onChange={(e) => setTeamCount(e.target.value)}
-                  placeholder="팀 개수를 입력하세요"
-                  className="bg-white h-[51px] rounded-[15px] text-[12px]"
+                  placeholder="팀 개수 입력"
+                  className="bg-[#FDFDFC] h-[54px] rounded-xl text-[14px]"
                 />
               </div>
             </div>
 
             {/* 설명 */}
             <div>
-              <label className="block text-[12px] mb-2">
+              <label className="block text-[13px] font-medium mb-2 text-[#4a4a4a]">
                 내용 <span className="text-red-500">*</span>
               </label>
               <Textarea
@@ -271,21 +271,22 @@ export default function CreateEventPageNew() {
                   setErrors({ ...errors, description: "" });
                 }}
                 placeholder="행사 세부 내용을 작성하세요"
-                className={`bg-white h-[116px] rounded-[10px] text-[12px] resize-none ${
-                  errors.description ? "ring-2 ring-red-500" : ""
+                className={`bg-[#FDFDFC] h-[130px] rounded-xl text-[14px] resize-none ${
+                  errors.description && "ring-2 ring-red-500"
                 }`}
               />
               {errors.description && (
-                <p className="text-red-500 text-[11px]">{errors.description}</p>
+                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
               )}
             </div>
 
-            {/* 제출 버튼 */}
-            <div className="pt-12">
-              <EventeeButton type="submit" className="w-full">
+            {/* 제출 */}
+            <div className="pt-8">
+              <EventeeButton type="submit" className="w-full h-[56px] text-[16px]">
                 행사 생성하기
               </EventeeButton>
             </div>
+
           </div>
         </form>
       </div>

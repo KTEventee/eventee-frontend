@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
 import { useApp } from "../contexts/AppContext";
+import { X } from "lucide-react";
 
 type ProfileEditModalProps = {
   open: boolean;
@@ -50,11 +51,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
   const handleUploadImage = async () => {
     if (!file) return alert("변경할 이미지를 선택해주세요.");
 
-    console.log("=== [UPLOAD START] ===");
-    console.log("file:", file);
-    console.log("contentType:", file.type);
-    console.log("contentLength:", file.size);
-
     setLoading(true);
 
     try {
@@ -71,7 +67,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       );
 
       const presignedJson = await presigned.json();
-      console.log("Presigned JSON:", presignedJson);
 
       if (!presignedJson.isSuccess) {
         alert("Presigned URL 발급 실패");
@@ -80,7 +75,7 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
 
       const { url, key } = presignedJson.result;
 
-      // S3 PUT 업로드
+      // S3 업로드
       const uploadResponse = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": file.type },
@@ -88,7 +83,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       });
 
       if (!uploadResponse.ok) {
-        console.error("S3 업로드 실패:", uploadResponse);
         alert("S3 업로드 실패");
         return;
       }
@@ -107,7 +101,6 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       );
 
       const confirmJson = await confirm.json();
-      console.log("Confirm JSON:", confirmJson);
 
       if (!confirmJson.isSuccess) {
         alert("프로필 반영에 실패했습니다.");
@@ -154,62 +147,67 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white w-96 max-w-[90%] p-6 rounded-2xl shadow-lg">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: "#67594C" }}>
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+
+      <div className="bg-white w-[420px] max-w-[90%] p-8 rounded-3xl shadow-xl border border-gray-100 relative">
+
+        {/* 닫기 버튼 */}
+        <button
+          onClick={onClose}
+          className="absolute right-5 top-5 p-1 hover:bg-gray-100 rounded-full transition"
+        >
+          <X size={20} className="text-gray-600" />
+        </button>
+
+        <h2 className="text-[22px] font-semibold mb-6 text-[#67594C]">
           프로필 수정
         </h2>
 
         {/* 닉네임 */}
-        <div className="mb-5">
-          <label className="text-sm text-gray-600 mb-1 block">닉네임</label>
+        <div className="mb-8">
+          <label className="block text-sm text-gray-600 mb-2">닉네임</label>
+
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-[#67594C] outline-none"
           />
 
           <button
             onClick={handleNicknameUpdate}
-            className="mt-2 w-full bg-[#67594C] text-white py-2 rounded-lg"
+            className="mt-3 w-full bg-[#67594C] text-white py-3 rounded-xl text-sm hover:bg-[#564a3f] transition"
           >
             닉네임 변경
           </button>
         </div>
 
         {/* 프로필 이미지 */}
-        <div className="mb-5">
-          <label className="text-sm text-gray-600 mb-2 block">프로필 이미지</label>
+        <div className="mb-8">
+          <label className="block text-sm text-gray-600 mb-2">프로필 이미지</label>
 
           <input
             type="file"
             accept="image/*"
-            className="mb-3"
+            className="mb-4 text-sm"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
 
           <button
             onClick={handleUploadImage}
-            className="w-full bg-[#67594C] text-white py-2 rounded-lg mb-2"
             disabled={loading}
+            className="w-full bg-[#67594C] text-white py-3 rounded-xl text-sm hover:bg-[#54473C] transition mb-2 disabled:opacity-60"
           >
-            {loading ? "업로드 중..." : "이미지 변경"}
+            {loading ? "업로드 중..." : "이미지 업로드"}
           </button>
 
           <button
             onClick={handleDeleteImage}
-            className="w-full border border-red-400 text-red-500 py-2 rounded-lg"
+            className="w-full border border-red-400 text-red-500 py-3 rounded-xl text-sm hover:bg-red-50 transition"
           >
             이미지 삭제
           </button>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full mt-4 bg-gray-200 py-2 rounded-lg hover:bg-gray-300"
-        >
-          닫기
-        </button>
       </div>
     </div>
   );

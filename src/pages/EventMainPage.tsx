@@ -362,45 +362,47 @@ export default function EventMainPage() {
   // ==========================
   // Post 변환 함수
   // ==========================
-const convertPost = (p: any): Post => {
-  const isVote = (p.type ?? "").toString().toLowerCase() === "vote";
+    const convertPost = (p: any): Post => {
+      const isVote = (p.type ?? "").toString().toLowerCase() === "vote";
 
-  const pollOptions = isVote && Array.isArray(p.pollOptions)
-    ? p.pollOptions.map((opt: any) => ({
-        id: `opt${opt.optionNo}`,
-        text: opt.text,
-        votes: opt.votes,
-        percent: opt.percent,
-        isMine: opt.isMine
-      }))
-    : undefined;
+      const pollOptions = isVote && Array.isArray(p.pollOptions)
+        ? p.pollOptions.map((opt: any) => ({
+            id: `opt${opt.optionNo}`,
+            text: opt.text,
+            votes: opt.votes,
+            percent: opt.percent,
+            isMine: opt.isMine
+          }))
+        : undefined;
 
-  const userVote = isVote && p.userVote != null
-    ? `opt${p.userVote}`
-    : undefined;
+      const userVote = isVote && p.userVote != null
+        ? `opt${p.userVote}`
+        : undefined;
 
-  return {
-    id: String(p.postId),
-    author: p.author,
-    content: p.content,
-    type: isVote ? "vote" : "text",
-    pollQuestion: p.pollQuestion,
-    pollOptions,
-    userVote,
-    createdAt: p.createdAt,
-    comments: (p.comments ?? []).map((c: any) => ({
-      id: String(c.commentId),
-      author: c.writerNickname,
-      content: c.content,
-      timestamp: c.createdAt,
-      imageUrl: undefined,
-      isWrite: false
-    })),
-    likes: 0,
-    isLiked: false,
-    isWrite: false, // 백엔드에 없음 → 일단 false
-  };
-};
+      return {
+        id: String(p.postId),
+        author: p.author,
+        content: p.content,
+        type: isVote ? "vote" : "text",
+        pollQuestion: p.pollQuestion,
+        pollOptions,
+        userVote,
+        createdAt: p.createdAt,
+        comments: (p.comments ?? []).map((c: any) => ({
+          id: String(c.commentId),
+          author: c.writerNickname,
+          content: c.content,
+          timestamp: c.createdAt,
+          imageUrl: undefined,
+          isWrite: Boolean(c.isMine)    
+        })),
+        likes: 0,
+        isLiked: false,
+        isWrite: Boolean(p.isMine),    
+      };
+    };
+
+
 
 
   const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
