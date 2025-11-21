@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
-import { User as UserIcon } from "lucide-react";
+import { User as UserIcon, Crown } from "lucide-react";
 import { apiFetch } from "../utils/apiFetch";
 import ProfileEditModal from "../components/ProfileEditModal";
 
@@ -16,6 +16,7 @@ type JoinedEvent = {
   participantsCount: number;
   participantProfileImages: string[];
   date: string;
+  role: string;
 };
 
 export default function MyPage() {
@@ -34,14 +35,12 @@ export default function MyPage() {
       .then((json) => {
         if (!json.isSuccess) return;
 
-        // 사용자 정보 저장
         setUser((prev) => ({
           ...(prev || {}),
           nickname: json.result.nickname,
           profileImageUrl: json.result.profileImageUrl,
         }));
 
-        // 참여 이벤트 저장
         setJoinedEvents(json.result.joinedEvents || []);
       });
   }, [API_URL, setUser]);
@@ -73,8 +72,6 @@ export default function MyPage() {
           {/* 프로필 영역 */}
           <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
             <div className="flex items-center justify-between">
-
-              {/* 프로필 이미지 + 닉네임 */}
               <div className="flex items-center gap-6">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-[#D2CDBC] flex items-center justify-center">
                   {user.profileImageUrl ? (
@@ -93,7 +90,6 @@ export default function MyPage() {
                 </h2>
               </div>
 
-              {/* 버튼 */}
               <div className="flex gap-3">
                 <EventeeButton
                   variant="ghost"
@@ -111,7 +107,6 @@ export default function MyPage() {
                   로그아웃
                 </EventeeButton>
               </div>
-
             </div>
           </div>
 
@@ -130,33 +125,66 @@ export default function MyPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {joinedEvents.map((event) => (
-                  <div
-                    key={event.eventId}
-                    className="bg-white rounded-2xl shadow-sm overflow-hidden"
-                  >
-                    {/* 썸네일 */}
-                    <div className="relative h-48 bg-gray-200">
-                      <img
-                        src={event.thumbnailUrl}
-                        alt={event.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                {joinedEvents.map((event) => {
+                  const isHost = event.role === "HOST";
 
-                    {/* 카드 내용 */}
-                    <div className="p-6">
-                      <h3
-                        className="mb-2 font-semibold"
-                        style={{ color: "#67594C" }}
-                      >
-                        {event.title}
-                      </h3>
+                  return (
+                    <div
+                      key={event.eventId}
+                      className={`
+                        rounded-2xl overflow-hidden relative transition p-0
+                        ${isHost 
+                          ? "border-2 border-[#67594C] bg-[#f4f1eb] shadow-lg" 
+                          : "bg-white shadow-sm"
+                        }
+                      `}
+                    >
+                      {/* HOST 뱃지 */}
+                      {isHost && (
+                        <div className="absolute top-3 right-3 bg-[#67594C] text-white px-3 py-1 rounded-full text-xs shadow">
+                          HOST
+                        </div>
+                      )}
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      {/* 썸네일 */}
+                      <div className="relative h-48 bg-gray-200">
+                        <img
+                          src={event.thumbnailUrl}
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
 
-                          {/* 참가자 프로필 이미지들 */}
+                      {/* 내용 */}
+                      <div className="p-6">
+
+                        {/* 제목 + 왕관 */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <h3
+                            className="font-semibold text-lg"
+                            style={{ color: "#67594C" }}
+                          >
+                            {event.title}
+                          </h3>
+
+                          {isHost && (
+                            <Crown
+                              size={18}
+                              className="text-[#67594C]"
+                            />
+                          )}
+                        </div>
+
+                        {/* 날짜 */}
+                        <div className="text-sm text-gray-600 mb-4 leading-relaxed">
+                          {event.startAt?.split("T")[0]}  
+                          <span className="mx-1">~</span>
+                          {event.endAt?.split("T")[0]}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+
+                          {/* 참가자 이미지 */}
                           <div className="flex -space-x-2">
                             {event.participantProfileImages.slice(0, 3).map((img, idx) => (
                               <img
@@ -166,7 +194,6 @@ export default function MyPage() {
                               />
                             ))}
 
-                            {/* +몇명 표시 */}
                             {event.participantsCount > 3 && (
                               <div
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs border-2 border-white"
@@ -180,34 +207,27 @@ export default function MyPage() {
                             )}
                           </div>
 
-                          <span className="text-sm text-gray-600">
-                            {event.startAt?.split("T")[0]} ~ {event.endAt?.split("T")[0]}
-                          </span>
-
+                          <EventeeButton
+                            className="px-6"
+                            onClick={() =>
+                              navigate("/event-password", {
+                                state: {
+                                  inviteCode: event.inviteCode,
+                                  eventId: event.eventId,
+                                  title: event.title,
+                                  startAt: event.startAt,
+                                  endAt: event.endAt,
+                                },
+                              })
+                            }
+                          >
+                            참여하기
+                          </EventeeButton>
                         </div>
-
-                        {/* 참여하기 → 비밀번호 입력 페이지 이동 */}
-                        <EventeeButton
-                          className="px-6"
-                          onClick={() =>
-                            navigate("/event-password", {
-                              state: {
-                                inviteCode: event.inviteCode,
-                                eventId: event.eventId,
-                                title: event.title,
-                                startAt: event.startAt,
-                                endAt: event.endAt,
-                              },
-                            })
-                          }
-                        >
-                          참여하기
-                        </EventeeButton>
                       </div>
                     </div>
-
-                  </div>
-                ))}
+                  );
+                })}
 
               </div>
             )}
@@ -220,11 +240,9 @@ export default function MyPage() {
           >
             + 이벤트 생성하기
           </button>
-
         </div>
       </div>
 
-      {/* 프로필 수정 모달 */}
       <ProfileEditModal
         open={isProfileModalOpen}
         onClose={() => setProfileModalOpen(false)}
