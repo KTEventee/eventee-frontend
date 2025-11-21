@@ -1,25 +1,13 @@
-//일단 api 불러온  버전임.
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 import {
-  Home,
-  Users,
-  MessageCircle,
-  FileText,
-  Gamepad2,
-  Heart,
-  MoreVertical,
   Plus,
   Image as ImageIcon,
   X,
-  PanelRightOpen,
-  PanelRightClose,
   Send,
-  UserCircle,
-  ArrowLeft,
-  Trash2
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -30,21 +18,23 @@ import {
 } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import { is } from "date-fns/locale";
-//test용
+import { apiFetch } from "../utils/apiFetch";
+
 type Comment = {
   id: string;
   author: string;
   content: string;
   timestamp: string;
-  imageUrl?: string;  
+  imageUrl?: string;
   isWrite: boolean;
 };
 
 type PollOption = {
-  id: string;
-  text: string;
-  votes: number;
+  id: string;          // "opt1", "opt2" …
+  text: string;        // 옵션 텍스트
+  votes: number;       // 득표 수
+  percent?: number;    // (백엔드에서 주는 percent, UI에서는 안 써도 됨)
+  isMine?: boolean;    // 내가 찍은 옵션인지 여부
 };
 
 type Post = {
@@ -53,14 +43,15 @@ type Post = {
   content: string;
   imageUrl?: string;
   likes: number;
-  isLiked: boolean; 
+  isLiked: boolean;
   comments: Comment[];
   type?: "text" | "vote";
   pollOptions?: PollOption[];
   pollQuestion?: string;
-  userVote?: string; // 사용자가 투표한 옵션 ID
+  userVote?: string;       // "opt1" 같은 형식
   isWrite: boolean;
   pollUsesPercent?: boolean;
+  createdAt?: string;
 };
 
 type Team = {
@@ -69,559 +60,661 @@ type Team = {
   color: string;
   posts: Post[];
   isMyTeam?: boolean;
+  groupNum?: number;
+  groupNo?: number;
+  description?: string;
+  leader?: string;
+  img?: string;
+};
+
+type EventInfo = {
+  eventId: number;
+  title: string;
+  description?: string;
+  startAt?: string;
+  endAt?: string;
+  thumbnailUrl?: string;
+  teamCount?: number;
+  role?: string;
+  nickname?: string; // 이벤트 내 닉네임
+};
+
+type GroupEditFormState = {
+  groupId: string;
+  groupName: string;
+  groupDescription: string;
+  imgUrl: string;
+  leader: string;
 };
 
 export default function EventMainPage() {
-  console.log("EventMainPage mounted");
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
-  const origin = "http://localhost:8080";
 
-  // 이벤트 정보 (EventPasswordPage에서 전달받음)
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const eventTitle = location.state?.eventTitle || "이벤트";
   const eventCode = location.state?.eventCode || "";
-  
-  //todo event 읽어와야할 필요가 있음
   const eventId = location.state?.eventId || 7;
-  const token = "eyJhbGciOiJIUzUxMiJ9.eyJ0eXBlIjoiYWNjZXNzIiwiaXNzIjoiY29tLnNlcnZlci5ldmVudGVlIiwiYXVkIjpbInRlc3RAdGVzdC5jb20iXSwiaWF0IjoxNzYzNTI0MjY1LCJleHAiOjE3NjM1MjYwNjV9.EwiwMVoBLsLDjvRWxplT7zH2XitUFvFu5lo1LYVl-8lR3hI19yO_B3wVOacg9g3iIEyAsAImvq4hT-vk_77hlw";
 
-  console.log("eventId:"+eventId);
+  console.log("[EventMainPage] 렌더링 시작", {
+    locationState: location.state,
+    eventTitle,
+    eventCode,
+    eventId,
+    user,
+  });
 
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
-  useEffect(() => {
-  async function loadGroups() {
-    if (!eventId) return;
 
-    try {
-      // API 요청
-      const res = await fetch(origin+`/api/v1/group/${eventId}`, {
-        method: "GET",
-         headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-
-      console.log("Group-res: "+res);
-
-      if (!data.isSuccess) {
-        console.error("그룹 불러오기 실패:", data.message);
-        return;
-      }
-
-      const { myGroup, otherGroup } = data.result;
-
-      const convertedTeams: Team[] = [
-        ...(myGroup
-          ? [{
-              id: String(myGroup.groupId),
-              name: myGroup.groupName,
-              color: "#FFAB5D",
-              posts: [],
-              isMyTeam: true,
-            }]
-          : []),
-        ...otherGroup.map((g: any) => ({
-          id: String(g.groupId),
-          name: g.groupName,
-          color: "#E8E4D9",
-          posts: [],
-          isMyTeam: false,
-        })),
-      ];
-
-      setTeams(convertedTeams);
-      // 게시글도 바로 불러오기 (팀 정보가 세팅된 직후)
-      await loadPostsForTeams(convertedTeams);
-    } catch (err) {
-      console.error("그룹 API 오류:", err);
-    }
-  }
-
-  loadGroups();
-}, [eventId]);
-  const [showChatSidebar, setShowChatSidebar] = useState(false);
-  const [showAddPostDialog, setShowAddPostDialog] =
-    useState(false);
+  const [showAddPostDialog, setShowAddPostDialog] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
-  const [selectedTeamId, setSelectedTeamId] =
-    useState<string>("");
-  const [commentInputs, setCommentInputs] = useState<{
-    [key: string]: string;
-  }>({});
-  const [newPostImage, setNewPostImage] = useState<
-    string | null
-  >(null);
-  const [commentImages, setCommentImages] = useState<{
-    [key: string]: string | null;
-  }>({});
-  const [showPostTypeMenu, setShowPostTypeMenu] =
-    useState(false);
-  const [postType, setPostType] = useState<"text" | "vote">(
-    "text",
-  );
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
+  const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [commentImages, setCommentImages] = useState<{ [key: string]: string | null }>({});
+  const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
+  const [postType, setPostType] = useState<"text" | "vote">("text");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOption1, setPollOption1] = useState("");
   const [pollOption2, setPollOption2] = useState("");
+  const [editingPost, setEditingPost] = useState<{ id: string; teamId: string } | null>(null);
+  const [isPostTeamLocked, setIsPostTeamLocked] = useState(false);
+  const [groupEditDialogOpen, setGroupEditDialogOpen] = useState(false);
+  const [groupEditForm, setGroupEditForm] = useState<GroupEditFormState>({
+    groupId: "",
+    groupName: "",
+    groupDescription: "",
+    imgUrl: "",
+    leader: "",
+  });
+
+  const formatDateOnly = (isoString: string) => {
+    if (!isoString) return "";
+
+    const date = new Date(isoString);
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+
+    return `${y}. ${m}. ${d}`;
+  };
 
 
-  // posts 불러오는 재사용 가능한 함수
-  const loadPostsForTeams = async (teamsArg?: Team[]) => {
-    console.log("loadPostsForTeams 실행");
+  const formatEventPeriod = (start?: string, end?: string) => {
+    if (!start || !end) return "";
+    const s = new Date(start);
+    const e = new Date(end);
+
+    const format = (d: Date) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    return `${format(s)} ~ ${format(e)}`;
+  };
+
+
+
+
+
+  // ==========================
+  // 그룹 불러오기
+  // ==========================
+  useEffect(() => {
+    console.log("[EventMainPage] useEffect(eventId) 실행", { eventId });
+    loadEventGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
+  useEffect(() => {
+    console.log("[EventMainPage] eventInfo 변경됨", eventInfo);
+  }, [eventInfo]);
+
+  useEffect(() => {
+    console.log("[EventMainPage] teams 변경됨", teams);
+  }, [teams]);
+
+  const assignGroupColor = (groupNo?: number) => {
+    const palette = ["#FFAB5D", "#E8E4D9", "#F5D0C5", "#C7D2FE", "#FDE68A"];
+    if (!groupNo) return palette[0];
+    return palette[(groupNo - 1) % palette.length];
+  };
+
+  const loadEventGroups = async () => {
     try {
-      const res = await fetch(origin + `/api/v1/post/${eventId}`, {
+      console.log("[EventMainPage] 이벤트 그룹 목록 조회 시작", { eventId, API_URL });
+      const res = await apiFetch(`${API_URL}/api/v1/events/${eventId}/groups`, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
       });
 
+      console.log("[EventMainPage] 이벤트 그룹 목록 fetch 응답 객체", res);
       const data = await res.json();
-      if (!data.isSuccess) return;
+      console.log("[EventMainPage] 이벤트 그룹 목록 응답 JSON", data);
 
-      const postGroups = data.result.lists;
-      const baseTeams = teamsArg ?? teams;
-
-      const updatedTeams = baseTeams.map((team) => {
-        const found = postGroups.find(
-          (pg: any) => pg.groupNum === Number(team.id),
-        );
-        if (!found) return team;
-
-        const convertedPosts: Post[] = found.posts.map((p: any) => {
-          // 서버가 VoteLogResponseDto 형태로 보낼 때 처리
-          const voteResp =
-            p.votedLogs ??
-            p.voteLogResponse ??
-            p.voteLogResponseDto ??
-            null;
-
-          // pollOptions 구성
-          let pollOptions: PollOption[] | undefined;
-          if (p.voteContent) {
-            const opts = p.voteContent.split("_");
-            // 서버가 op1Percent/op2Percent를 줄 경우 퍼센트로 표시
-            if (voteResp && typeof voteResp === "object" && typeof voteResp.op1Percent === "number") {
-              const op1 = Math.round(Number(voteResp.op1Percent ?? 0));
-              const op2 = Math.round(Number(voteResp.op2Percent ?? 0));
-              pollOptions = [
-                { id: "opt1", text: opts[0] ?? "옵션1", votes: op1 },
-                { id: "opt2", text: opts[1] ?? "옵션2", votes: op2 },
-              ];
-            } else if (Array.isArray(p.votedLogs)) {
-              // 혹시 이전 형태(배열)인 경우에 대비
-              pollOptions = opts.map((opt: string, idx: number) => ({
-                id: `opt${idx + 1}`,
-                text: opt,
-                votes: p.votedLogs.filter((log: any) => log.optionIndex === idx || log.voteNum === idx + 1).length,
-              }));
-            } else {
-              // 그 외에는 0으로 초기화
-              pollOptions = opts.map((opt: string, idx: number) => ({
-                id: `opt${idx + 1}`,
-                text: opt,
-                votes: 0,
-              }));
-            }
-          } else {
-            pollOptions = undefined;
-          }
-
-          // userVote 결정: isVote가 true일 때만 voteNum을 사용
-          let userVoteVal: string | undefined = undefined;
-          if (voteResp && typeof voteResp === "object" && voteResp.isVote === true) {
-            const voteNum =
-              voteResp.voteNum ??
-              voteResp.voteNUm ?? // possible typo
-              voteResp.myVoteNum ??
-              voteResp.myVote ??
-              null;
-            if (typeof voteNum === "number" || (!isNaN(Number(voteNum)) && voteNum !== null)) {
-              userVoteVal = `opt${Number(voteNum)}`;
-            } else {
-              userVoteVal = "voted";
-            }
-          }
-          
-          const pollUsesPercent = Boolean(voteResp && typeof voteResp === "object" && (voteResp.op1Percent !== undefined || voteResp.op2Percent !== undefined));
-          
-          return {
-            id: String(p.postId),
-            author: p.writerName,
-            content: p.content,
-            type: p.type === "vote" ? "vote" : "text",
-            pollQuestion: p.voteTitle,
-            pollOptions,
-            userVote: userVoteVal,
-            pollUsesPercent,
-            likes: 0,
-            isLiked: false,
-            isWrite: p.isWrite ?? false,
-            comments: (p.comments ?? []).map((c: any) => ({
-              id: String(c.commentId ?? c.id),
-              author: c.writerName ?? c.writer,
-              content: c.content,
-              timestamp: c.createdAt,
-              imageUrl: c.imageUrl ?? undefined,
-              isWrite: c.isWrite ?? false,
-            })),
-          } as Post;
-        });
-
-        return { ...team, posts: convertedPosts };
-      });
-
-      setTeams(updatedTeams);
-    } catch (err) {
-      console.error("게시글 API 오류:", err);
-    }
-  };
-
-
-const handleUpdatePost = async (
-  teamId: string,
-  postId: string,
-  updatedContent: string,
-  updatedType: "text" | "vote",
-  updatedVoteTitle?: string,
-  updatedOptions?: string[]
-) => {
-  try {
-    // 보내는 body 구조 (백엔드 Request와 정확히 맞춤)
-    const body = {
-      postId: Number(postId),
-      groupId: Number(teamId),
-      type: updatedType === "vote" ? "vote" : "text",
-      content: updatedContent,
-      voteTitle: updatedType === "vote" ? updatedVoteTitle : null,
-      voteContent:
-        updatedType === "vote" && updatedOptions
-          ? updatedOptions.join("_") // ["A","B","C"] → "A_B_C"
-          : null,
-    };
-
-    const res = await fetch(origin+`/api/v1/post`, {
-      method: "PATCH",
-      headers: {
-          "Authorization": `Bearer ${token}`
-        },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (!data.isSuccess) {
-      console.error("게시글 수정 실패:", data.message);
-      return;
-    }
-
-    const updated = data.result; // 서버에서 반환한 수정된 PostDto
-
-    // ------------------------------
-    // 변환 → 기존 loadPosts 로직과 동일하게
-    // ------------------------------
-    const convertedPost: Post = {
-        id: String(updated.postId),
-        author: updated.writerName,
-        content: updated.content,
-
-        likes: 0,
-        isLiked: false,
-        isWrite: updated.isWrite,
-
-        type: updated.type === "vote" ? "vote" : "text",
-        pollQuestion: updated.voteTitle,
-        pollOptions: (() => {
-          // updated.votedLogs 는 VoteLogResponseDto일 수 있음
-          const voteResp =
-            updated.votedLogs ?? updated.voteLogResponse ?? updated.voteLogResponseDto ?? null;
-
-          if (updated.voteContent) {
-            const opts = updated.voteContent.split("_");
-            if (voteResp && typeof voteResp === "object" && typeof voteResp.op1Percent === "number") {
-              return [
-                { id: "opt1", text: opts[0] ?? "옵션1", votes: Math.round(Number(voteResp.op1Percent ?? 0)) },
-                { id: "opt2", text: opts[1] ?? "옵션2", votes: Math.round(Number(voteResp.op2Percent ?? 0)) },
-              ];
-            } else if (Array.isArray(updated.votedLogs)) {
-              return opts.map((opt: string, idx: number) => ({
-                id: `opt${idx + 1}`,
-                text: opt,
-                votes: updated.votedLogs.filter((log: any) => log.optionIndex === idx || log.voteNum === idx + 1).length,
-              }));
-            } else {
-              return opts.map((opt: string, idx: number) => ({ id: `opt${idx + 1}`, text: opt, votes: 0 }));
-            }
-          }
-          return undefined;
-        })(),
-
-        comments: (updated.comments ?? []).map((c: any) => ({
-          id: c.commentId,
-          author: c.writerName,
-          content: c.content,
-          timestamp: new Date().toISOString(),
-        })),
-      };
-
-    // ------------------------------
-    // teams 상태에서 해당 post만 교체
-    // ------------------------------
-    setTeams(
-      teams.map((team) =>
-        team.id === teamId
-          ? {
-              ...team,
-              posts: team.posts.map((post) =>
-                post.id === postId ? convertedPost : post
-              ),
-            }
-          : team
-      )
-    );
-  } catch (err) {
-    console.error("게시글 수정 API 오류:", err);
-  }
-};
-
-  const myTeam = teams.find((team) => team.isMyTeam);
-
-  const handleLike = (teamId: string, postId: string) => {
-    // TODO: 백엔드 연동 필요
-    // API: POST /api/posts/:postId/like
-    // body: { teamId }
-    // Response: { success: boolean, likes: number }
-
-    setTeams(
-      teams.map((team) => {
-        if (team.id === teamId) {
-          return {
-            ...team,
-            posts: team.posts.map((post) => {
-              if (post.id === postId) {
-                return {
-                  ...post,
-                  isLiked: !post.isLiked,
-                  likes: post.isLiked
-                    ? post.likes - 1
-                    : post.likes + 1,
-                };
-              }
-              return post;
-            }),
-          };
-        }
-        return team;
-      }),
-    );
-  };
-
-  const handleAddPost = async () => {
-    console.log("selectedTeamId:", selectedTeamId);
-    console.log("newPostContent:", newPostContent);
-    if (!newPostContent.trim() || !selectedTeamId) return;
-
-    const isPoll = postType === "vote";
-
-    // 🔥 백엔드 요청 DTO 정확히 맞춘 body
-    const body = {
-      groupId: Number(selectedTeamId),
-      type: isPoll ? "vote" : "text",
-      content: newPostContent,
-      voteTitle: isPoll ? pollQuestion : null,
-      voteContent: isPoll ? `${pollOption1}_${pollOption2}` : null,
-    };
-
-    try {
-      const res = await fetch(origin+"/api/v1/post", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
       if (!data.isSuccess) {
-        console.error("게시글 생성 실패:", data.message);
+        console.warn("[EventMainPage] 이벤트 그룹 목록 응답 isSuccess=false", data);
         return;
       }
 
-      // 서버에 성공적으로 작성되면 API에서 최신 게시글을 다시 불러와 반영
-      await loadPostsForTeams();
+      const {
+        title,
+        eventTitle: legacyEventTitle,
+        description,
+        eventDescription,
+        startAt,
+        endAt,
+        thumbnailUrl,
+        teamCount,
+        groups,
+        role,
+        nickname, // ✅ 백엔드에서 넘어오는 이벤트 내 닉네임 기대
+      } = data.result;
 
-      // 입력창 초기화
-      setNewPostContent("");
-      setSelectedTeamId("");
-      setShowAddPostDialog(false);
-      setPollQuestion("");
-      setPollOption1("");
-      setPollOption2("");
-      setPostType("text");
+      const resolvedTitle = title ?? legacyEventTitle ?? eventTitle;
+      const resolvedDescription = description ?? eventDescription;
 
+      console.log("[EventMainPage] 파싱된 이벤트 정보", {
+        eventId,
+        resolvedTitle,
+        resolvedDescription,
+        startAt,
+        endAt,
+        thumbnailUrl,
+        teamCount,
+        role,
+        nickname,
+      });
+
+      setEventInfo({
+        eventId,
+        title: resolvedTitle,
+        description: resolvedDescription,
+        startAt,
+        endAt,
+        thumbnailUrl,
+        teamCount,
+        role,
+        nickname,
+      });
+
+      const convertedTeams: Team[] = (groups ?? []).map((g: any) => ({
+        id: String(g.groupId),
+        name: g.groupName,
+        color: assignGroupColor(g.groupNo ?? g.groupId),
+        posts: [],
+        isMyTeam: Boolean(g.isMyGroup ?? g.isMine ?? false),
+        groupNum: Number(g.groupNum ?? g.groupNo ?? g.groupId),
+        groupNo: Number(g.groupNo ?? g.groupNum ?? g.groupId),
+        description: g.groupDescription,
+        leader: g.groupLeader,
+        img: g.groupImg,
+      }));
+
+      console.log("[EventMainPage] 변환된 팀 목록", convertedTeams);
+
+      setTeams(convertedTeams);
+
+      const teamsWithPosts = await Promise.all(
+        convertedTeams.map(async (team) => {
+          const posts = await fetchGroupPosts(team.id);
+          console.log("[EventMainPage] 팀별 게시글 로딩 완료", {
+            teamId: team.id,
+            teamName: team.name,
+            posts,
+          });
+          return { ...team, posts };
+        })
+      );
+
+      console.log("[EventMainPage] 게시글 포함 팀 목록 최종", teamsWithPosts);
+      setTeams(teamsWithPosts);
     } catch (err) {
-      console.error("게시글 생성 API 오류:", err);
-    }    
+      console.error("이벤트 그룹 API 오류:", err);
+    }
   };
 
-  const handleAddComment = async (teamId: string, postId: string) => {
-  const commentText = commentInputs[postId];
-  if (!commentText?.trim()) return;
+  const openGroupEditDialog = (team: Team) => {
+    console.log("[EventMainPage] 그룹 수정 다이얼로그 오픈", team);
+    setGroupEditForm({
+      groupId: team.id,
+      groupName: team.name,
+      groupDescription: team.description ?? "",
+      imgUrl: team.img ?? "",
+      leader: team.leader ?? "",
+    });
+    setGroupEditDialogOpen(true);
+  };
 
-  try {
-    // 서버로 댓글 전송 (DTO: CommentUpdateDto(long id, String content))
+  const closeGroupEditDialog = () => {
+    console.log("[EventMainPage] 그룹 수정 다이얼로그 닫기");
+    setGroupEditDialogOpen(false);
+    setGroupEditForm({
+      groupId: "",
+      groupName: "",
+      groupDescription: "",
+      imgUrl: "",
+      leader: "",
+    });
+  };
+
+  const handleGroupEditInputChange = (field: keyof GroupEditFormState, value: string) => {
+    console.log("[EventMainPage] 그룹 수정 인풋 변경", { field, value });
+    setGroupEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmitGroupEdit = async () => {
+    if (!groupEditForm.groupId || !groupEditForm.groupName.trim()) {
+      console.warn("[EventMainPage] 그룹 수정 필수값 누락", groupEditForm);
+      return;
+    }
+
+    const payload = {
+      groupId: Number(groupEditForm.groupId),
+      groupName: groupEditForm.groupName.trim(),
+      groupDescription: groupEditForm.groupDescription ?? "",
+      imgUrl: groupEditForm.imgUrl ?? "",
+      leader: groupEditForm.leader ?? "",
+    };
+
+    try {
+      console.log("[EventMainPage] 그룹 수정 요청", payload);
+      const res = await apiFetch(`${API_URL}/api/v1/group`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      console.log("[EventMainPage] 그룹 수정 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 그룹 수정 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 그룹 수정 실패 isSuccess=false", data);
+        return;
+      }
+
+      setTeams((prev) =>
+        prev.map((team) =>
+          team.id === groupEditForm.groupId
+            ? {
+                ...team,
+                name: payload.groupName,
+                description: payload.groupDescription,
+                img: payload.imgUrl,
+                leader: payload.leader,
+              }
+            : team
+        )
+      );
+      closeGroupEditDialog();
+    } catch (err) {
+      console.error("그룹 수정 오류:", err);
+    }
+  };
+
+  // ==========================
+  // Post 변환 함수
+  // ==========================
+const convertPost = (p: any): Post => {
+  const isVote = (p.type ?? "").toString().toLowerCase() === "vote";
+
+  const pollOptions = isVote && Array.isArray(p.pollOptions)
+    ? p.pollOptions.map((opt: any) => ({
+        id: `opt${opt.optionNo}`,
+        text: opt.text,
+        votes: opt.votes,
+        percent: opt.percent,
+        isMine: opt.isMine
+      }))
+    : undefined;
+
+  const userVote = isVote && p.userVote != null
+    ? `opt${p.userVote}`
+    : undefined;
+
+  return {
+    id: String(p.postId),
+    author: p.author,
+    content: p.content,
+    type: isVote ? "vote" : "text",
+    pollQuestion: p.pollQuestion,
+    pollOptions,
+    userVote,
+    createdAt: p.createdAt,
+    comments: (p.comments ?? []).map((c: any) => ({
+      id: String(c.commentId),
+      author: c.writerNickname,
+      content: c.content,
+      timestamp: c.createdAt,
+      imageUrl: undefined,
+      isWrite: false
+    })),
+    likes: 0,
+    isLiked: false,
+    isWrite: false, // 백엔드에 없음 → 일단 false
+  };
+};
+
+
+  const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
+    try {
+      console.log("[EventMainPage] 그룹 게시글 조회 시작", { eventId, groupId });
+      const res = await apiFetch(
+        `${API_URL}/api/v1/events/${eventId}/groups/${groupId}/posts`,
+        {
+          method: "GET",
+        }
+      );
+
+      console.log("[EventMainPage] 그룹 게시글 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 그룹 게시글 응답 JSON", { groupId, data });
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 그룹 게시글 응답 isSuccess=false", {
+          groupId,
+          data,
+        });
+        return [];
+      }
+
+      const posts = data.result?.posts ?? [];
+      const converted = posts.map((post: any) => convertPost(post));
+      return converted;
+    } catch (err) {
+      console.error("그룹 게시글 API 오류:", err);
+      return [];
+    }
+  };
+
+  // ==========================
+  // 게시글 생성
+  // ==========================
+  const resetPostForm = () => {
+    console.log("[EventMainPage] 게시글 폼 리셋");
+    setNewPostContent("");
+    setSelectedTeamId("");
+    setNewPostImage(null);
+    setPollQuestion("");
+    setPollOption1("");
+    setPollOption2("");
+    setPostType("text");
+    setEditingPost(null);
+    setShowPostTypeMenu(false);
+    setIsPostTeamLocked(false);
+  };
+
+  const refreshTeamPosts = async (teamId: string) => {
+    if (!teamId) {
+      console.warn("[EventMainPage] refreshTeamPosts teamId 없음");
+      return;
+    }
+    console.log("[EventMainPage] 팀 게시글 새로고침 시작", { teamId });
+    const posts = await fetchGroupPosts(teamId);
+    setTeams((prev) =>
+      prev.map((team) => (team.id === teamId ? { ...team, posts } : team))
+    );
+  };
+
+  const closePostDialog = () => {
+    console.log("[EventMainPage] 게시글 다이얼로그 닫기");
+    setShowAddPostDialog(false);
+    resetPostForm();
+  };
+
+  const openPostDialog = (teamId: string, post?: Post) => {
+    console.log("[EventMainPage] 게시글 다이얼로그 오픈", { teamId, post });
+    if (post) {
+      setEditingPost({ id: post.id, teamId });
+      setNewPostContent(post.content);
+      setPostType(post.type ?? "text");
+      if (post.type === "vote" && post.pollOptions) {
+        setPollQuestion(post.pollQuestion ?? "");
+        setPollOption1(post.pollOptions[0]?.text ?? "");
+        setPollOption2(post.pollOptions[1]?.text ?? "");
+      } else {
+        setPollQuestion("");
+        setPollOption1("");
+        setPollOption2("");
+      }
+    } else {
+      resetPostForm();
+    }
+    if (teamId) {
+      setSelectedTeamId(teamId);
+      setIsPostTeamLocked(true);
+    } else {
+      setIsPostTeamLocked(false);
+    }
+    setShowAddPostDialog(true);
+  };
+
+  const handleSubmitPost = async () => {
+    if (!newPostContent.trim() || !selectedTeamId) {
+      console.warn("[EventMainPage] 게시글 저장 필수값 누락", {
+        newPostContent,
+        selectedTeamId,
+      });
+      return;
+    }
+
+    const isPoll = postType === "vote";
+
+    const body: Record<string, any> = {
+      groupId: Number(selectedTeamId),
+      type: isPoll ? "VOTE" : "TEXT",
+      content: newPostContent,
+      voteTitle: isPoll ? pollQuestion : null,
+      voteContent: isPoll
+        ? [pollOption1, pollOption2]
+            .map((opt) => opt?.trim())
+            .filter(Boolean)
+            .join("_")
+        : null,
+    };
+
+    if (editingPost) {
+      body.postId = Number(editingPost.id);
+    }
+
+    try {
+      console.log("[EventMainPage] 게시글 저장 요청", {
+        mode: editingPost ? "update" : "create",
+        body,
+      });
+      const res = await apiFetch(`${API_URL}/api/v1/post`, {
+        method: editingPost ? "PATCH" : "POST",
+        body: JSON.stringify(body),
+      });
+
+      console.log("[EventMainPage] 게시글 저장 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 게시글 저장 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 게시글 저장 실패 isSuccess=false", data);
+        return;
+      }
+
+      await refreshTeamPosts(selectedTeamId);
+      closePostDialog();
+    } catch (err) {
+      console.error("게시글 저장 오류:", err);
+    }
+  };
+
+  // ==========================
+  // 댓글 생성
+  // ==========================
+  const handleAddComment = async (teamId: string, postId: string) => {
+    const commentText = commentInputs[postId];
+    if (!commentText?.trim()) {
+      console.warn("[EventMainPage] 댓글 내용 없음", { postId, commentText });
+      return;
+    }
+
     const body = {
       postId: Number(postId),
       content: commentText,
     };
 
-    const res = await fetch(origin+"/api/v1/comment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      console.log("[EventMainPage] 댓글 생성 요청", body);
+      const res = await apiFetch(`${API_URL}/api/v1/comment`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
 
-    const data = await res.json();
+      console.log("[EventMainPage] 댓글 생성 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 댓글 생성 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 댓글 생성 실패 isSuccess=false", data);
+        return;
+      }
 
-    if (!data.isSuccess) {
-      console.error("댓글 생성 실패:", data.message);
-      return;
+      await refreshTeamPosts(teamId);
+
+      setCommentInputs({ ...commentInputs, [postId]: "" });
+      setCommentImages({ ...commentImages, [postId]: null });
+    } catch (err) {
+      console.error("댓글 생성 오류:", err);
     }
-
-    // 서버 반영된 최신 게시글을 다시 불러와 상태 갱신
-    await loadPostsForTeams();
-
-    // 댓글 입력창 초기화
-    setCommentInputs({ ...commentInputs, [postId]: "" });
-    setCommentImages({ ...commentImages, [postId]: null });
-  } catch (err) {
-    console.error("댓글 생성 API 오류:", err);
-  }
-};
-
-const handleDeleteComment = async (
-  commentId: string,
-) => {
-  try {
-    const res = await fetch(origin+`/api/v1/comment/${commentId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const data = await res.json();
-    if (!data.isSuccess) {
-      console.error("댓글 삭제 실패:", data.message);
-      return;
-    }
-
-    // 삭제 후 최신 상태로 갱신
-    await loadPostsForTeams();
-  } catch (err) {
-    console.error("댓글 삭제 API 오류:", err);
-  }
-};
-
-  const handleCommentInputChange = (
-    postId: string,
-    value: string,
-  ) => {
-    setCommentInputs({ ...commentInputs, [postId]: value });
   };
 
-  const handleVote = async (
-  teamId: string,
-  postId: string,
-  optionId: string,
-  ) => {
-    // 현재 포스트 찾기
+  // ==========================
+  // 댓글 삭제
+  // ==========================
+  const handleDeleteComment = async (teamId: string, commentId: string) => {
+    try {
+      console.log("[EventMainPage] 댓글 삭제 요청", { commentId });
+      const res = await apiFetch(`${API_URL}/api/v1/comment/${commentId}`, {
+        method: "DELETE",
+      });
+
+      console.log("[EventMainPage] 댓글 삭제 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 댓글 삭제 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 댓글 삭제 실패 isSuccess=false", data);
+        return;
+      }
+
+      await refreshTeamPosts(teamId);
+    } catch (err) {
+      console.error("댓글 삭제 오류:", err);
+    }
+  };
+
+  // ==========================
+  // 투표
+  // ==========================
+  const handleVote = async (teamId: string, postId: string, optionId: string) => {
     const team = teams.find((t) => t.id === teamId);
     const post = team?.posts.find((p) => p.id === postId);
-    if (!post || !post.pollOptions) return;
-
-    // 이미 투표한 상태면 무시 (중복 선택 방지)
-    if (post.userVote) {
-      console.log("이미 투표되어 있음, 추가 투표 불가:", post.userVote);
+    if (!post || !post.pollOptions) {
+      console.warn("[EventMainPage] 투표 대상 게시글/옵션 없음", {
+        teamId,
+        postId,
+        post,
+      });
       return;
     }
 
-    // 낙관적 업데이트를 위한 백업
-    const prevTeams = teams;
+    const option = post.pollOptions.find((o) => o.id === optionId);
+    const voteText = option?.text ?? optionId;
 
-    // 낙관적 UI 업데이트: pollUsesPercent면 퍼센트 직접 변경하지 않고 userVote만 설정
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? {
-              ...t,
-              posts: t.posts.map((p) => {
-                if (p.id !== postId) return p;
-                return {
-                  ...p,
-                  userVote: optionId,
-                   pollOptions: Array.isArray(p.pollOptions)
-                    ? p.pollUsesPercent
-                      ? p.pollOptions // 퍼센트 기반이면 그대로
-                      : p.pollOptions.map((opt) =>
-                          opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt,
-                        )
-                    : p.pollOptions,
-                };
-              }),
-            }
-          : t,
-      ),
-    );
+    try {
+      console.log("[EventMainPage] 투표 요청", {
+        postId,
+        voteText,
+      });
+      const res = await apiFetch(`${API_URL}/api/v1/post/vote`, {
+        method: "POST",
+        body: JSON.stringify({
+          postId: Number(postId),
+          voteText,
+        }),
+      });
 
-  // voteText 결정 (옵션 텍스트 우선, 없으면 optN -> N)
-  const option = post.pollOptions.find((o) => o.id === optionId);
-  let voteText = option?.text ?? optionId;
-  const m = /^opt(\d+)$/.exec(optionId);
-  if (!option?.text && m) voteText = m[1];
+      console.log("[EventMainPage] 투표 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 투표 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 투표 실패 isSuccess=false", data);
+        return;
+      }
 
-  const body = {
-    postId: Number(postId),
-    voteText,
+      await refreshTeamPosts(teamId);
+    } catch (err) {
+      console.error("투표 오류:", err);
+    }
   };
 
-  try {
-    const res = await fetch(origin + "/api/v1/post/vote", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+  // ==========================
+  // 게시글 삭제
+  // ==========================
+  const handleDeletePost = async (teamId: string, postId: string) => {
+    if (!window.confirm("게시글을 삭제하시겠어요?")) return;
+    try {
+      console.log("[EventMainPage] 게시글 삭제 요청", { postId });
+      const res = await apiFetch(`${API_URL}/api/v1/post/${postId}`, {
+        method: "DELETE",
+      });
 
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      console.error("투표 HTTP 오류:", res.status, txt);
-      setTeams(prevTeams); // 롤백
-      return;
+      console.log("[EventMainPage] 게시글 삭제 fetch 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 게시글 삭제 응답 JSON", data);
+      if (!data.isSuccess) {
+        console.warn("[EventMainPage] 게시글 삭제 실패 isSuccess=false", data);
+        return;
+      }
+
+      await refreshTeamPosts(teamId);
+    } catch (err) {
+      console.error("게시글 삭제 오류:", err);
     }
+  };
 
-    const data = await res.json();
-    if (!data.isSuccess) {
-      console.error("투표 실패:", data.message, data);
-      setTeams(prevTeams); // 롤백
-      return;
-    }
+  const myTeam = teams.find((team) => team.isMyTeam);
+  const selectedTeam = teams.find((team) => team.id === selectedTeamId);
+  const eventPeriod = formatEventPeriod(eventInfo?.startAt, eventInfo?.endAt);
+  const headerTitleText = eventInfo?.title ?? eventTitle;
+  const headerSubtitleText =
+    eventInfo?.description ??
+    (eventInfo?.teamCount
+      ? `총 ${eventInfo.teamCount}개 팀`
+      : eventCode
+      ? `초대 코드: ${eventCode}`
+      : "");
 
-    // 서버의 최신 투표 로그/퍼센트로 재로딩하여 정확히 반영
-    await loadPostsForTeams();
-  } catch (err) {
-    console.error("투표 API 오류:", err);
-    setTeams(prevTeams); // 롤백
-  }
-};
+  const userInitial = (user?.nickname ?? user?.email ?? "U")
+    .charAt(0)
+    .toUpperCase();
+
+  const isEventHost = (eventInfo?.role ?? user?.role)?.toUpperCase() === "HOST";
+  console.log("[EventMainPage] isEventHost 계산", {
+    eventRole: eventInfo?.role,
+    userRole: user?.role,
+    isEventHost,
+  });
+
+  // ✅ 이벤트 닉네임 우선 사용 (join 응답의 nickname)
+  const displayNickname =
+    eventInfo?.nickname ??
+    location.state?.eventNickname ?? // 혹시 state로도 넘어온 경우 대비
+    user?.nickname ??
+    user?.email ??
+    "닉네임";
+
+  // ===================================================
+  // ==================== UI 시작 ======================
+  // ===================================================
 
   return (
     <div className="h-screen flex flex-col">
@@ -631,152 +724,201 @@ const handleDeleteComment = async (
           <h1 className="text-[30px] font-bold">
             Event<span style={{ color: "#67594C" }}>Tee</span>
           </h1>
-          <div className="flex items-center gap-2"></div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm text-gray-600">
-              KT대학교 Cloud학과 MT (11.03 ~ 11.04)
+          <div className="hidden sm:flex flex-col text-gray-600">
+            <p className="text-sm">
+              {headerTitleText}
+              {eventPeriod && (
+                <span className="ml-1 text-xs text-gray-500">
+                  ({eventPeriod})
+                </span>
+              )}
             </p>
-            <p className="text-xs text-gray-500">
-              총괄 : 케클업 (010-xxxx-xxxx)
-            </p>
+            {headerSubtitleText && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                {headerSubtitleText}
+              </p>
+            )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {isEventHost && (
+            <EventeeButton
+              variant="outline"
+              onClick={() => {
+                console.log("[EventMainPage] 운영자 페이지 버튼 클릭", {
+                  eventId,
+                });
+                navigate("/admin-dashboard", { state: { eventId } });
+              }}
+            >
+              운영자 페이지
+            </EventeeButton>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              console.log(
+                "[EventMainPage] 헤더 프로필 영역 클릭 → 마이페이지 이동"
+              );
+              navigate("/my-page");
+            }}
+            className="flex items-center gap-3 px-3 py-2 rounded-full bg-gray-50 hover:bg-gray-100 transition"
+          >
+            {user?.profileImageUrl ? (
+              <img
+                src={user.profileImageUrl}
+                alt="프로필"
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#67594C] text-white flex items-center justify-center text-sm font-semibold">
+                {userInitial}
+              </div>
+            )}
+
+            <div className="text-left">
+              {/* ✅ 이벤트 닉네임 사용 */}
+              <p className="text-sm font-medium text-gray-800">
+                {displayNickname}
+              </p>
+              {/* 아래는 계정 이메일 그대로 유지 */}
+              <p className="text-xs text-gray-500">
+                {user?.email || "마이페이지 이동"}
+              </p>
+            </div>
+          </button>
         </div>
       </div>
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* 팀 칼럼 영역 */}
+        {/* 팀 컬럼 */}
         <div className="flex-1 overflow-x-auto px-4 py-6">
           <div className="flex gap-4 min-w-min">
             {teams.map((team) => (
-              <div
-                key={team.id}
-                className="w-[280px] flex-shrink-0"
-              >
-                {/* 팀 헤더 */}
+              <div key={team.id} className="w-[280px] flex-shrink-0">
                 <div
-                  className={`rounded-t-xl px-4 py-3 flex items-center justify-between ${team.isMyTeam ? "ring-2 ring-[#67594C]" : ""}`}
+                  className={`rounded-t-xl px-4 py-3 flex items-center justify-between ${
+                    team.isMyTeam ? "ring-2 ring-[#67594C]" : ""
+                  }`}
                   style={{ backgroundColor: team.color }}
                 >
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm">{team.name}</h3>
+                    <button
+                      onClick={() => openGroupEditDialog(team)}
+                      className="p-1 rounded hover:bg-white/40 transition"
+                      title="그룹 정보 수정"
+                    >
+                      <Pencil className="w-3 h-3 text-gray-700" />
+                    </button>
                     {team.isMyTeam && (
-                      <span className="text-xs bg-white/40 px-2 py-0.5 rounded">
+                      <span className="text-xs bg.white/40 px-2 py-0.5 rounded">
                         내 팀
                       </span>
                     )}
                   </div>
-                  <button className="p-1 hover:bg-white/20 rounded">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
                 </div>
 
-                {/* 포스트 리스트 */}
+                {/* Post 리스트 */}
                 <div className="space-y-3 mt-3">
                   {team.posts.map((post) => (
                     <div
                       key={post.id}
                       className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
                     >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                          <span className="text-xs text-gray-600">
+                            {post.author}
+                          </span>
+                        </div>
+                        {post.isWrite && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openPostDialog(team.id, post)}
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="게시글 수정"
+                            >
+                              <Pencil className="w-4 h-4 text-gray-500" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDeletePost(team.id, post.id)
+                              }
+                              className="p-1 rounded hover:bg-red-50"
+                              title="게시글 삭제"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       {/* 투표 게시글 */}
-                      {post.type === "vote" &&
-                      post.pollOptions ? (
+                      {post.type === "vote" && post.pollOptions ? (
                         <>
-                          {/* 투표 제목과 좋아요 */}
                           <div className="flex items-start justify-between mb-2">
                             <h4
                               className="text-sm flex-1"
                               style={{
-                                color: team.isMyTeam
-                                  ? "#FFAB5D"
-                                  : "#6B7280",
+                                color: team.isMyTeam ? "#FFAB5D" : "#6B7280",
                               }}
                             >
                               {post.pollQuestion}
                             </h4>
-                            <button
-                              onClick={() =>
-                                handleLike(team.id, post.id)
-                              }
-                              className="ml-2"
-                            >
-                              <Heart
-                                className={`w-4 h-4 ${post.isLiked ? "fill-red-500 text-red-500" : "text-gray-400"}`}
-                              />
-                            </button>
                           </div>
 
-                          {/* 투표 설명 */}
                           <p className="text-xs text-gray-600 mb-4 whitespace-pre-line">
                             {post.content}
                           </p>
 
-                          {/* 투표 옵션 */}
                           <div className="grid grid-cols-2 gap-2 mb-3">
                             {post.pollOptions.map((option) => {
-                              const totalVotes =
-                                post.pollOptions!.reduce(
-                                  (sum, opt) => sum + opt.votes,
-                                  0,
-                                );
+                              const totalVotes = post.pollOptions!.reduce(
+                                (sum, opt) => sum + opt.votes,
+                                0
+                              );
+
                               const percentage =
                                 totalVotes > 0
                                   ? Math.round(
-                                      (option.votes /
-                                        totalVotes) *
-                                        100,
+                                      (option.votes / totalVotes) * 100
                                     )
                                   : 0;
-                              const isVoted =
-                                post.userVote === option.id;
+
+                              const isVoted = post.userVote === option.id;
 
                               return (
                                 <button
                                   key={option.id}
-                                  onClick={() =>
-                                    handleVote(
-                                      team.id,
-                                      post.id,
-                                      option.id,
-                                    )
-                                  }
+                                  onClick={() => handleVote(team.id, post.id, option.id)}
                                   className="rounded-lg p-4 text-center transition-all"
                                   style={{
-                                    backgroundColor:
-                                      team.isMyTeam
-                                        ? "#FFAB5D"
-                                        : "#E5E7EB",
-                                    opacity: isVoted ? 1 : 0.6,
+                                    backgroundColor: option.isMine
+                                      ? "#67594C"        // ✔ 선택된 색
+                                      : "#E5E7EB",       // 기본 색
+
+                                    color: option.isMine ? "white" : "#6B7280",
+                                    border: option.isMine ? "2px solid #67594C" : "1px solid #D1D5DB",
+                                    opacity: option.isMine ? 1 : 0.7,
                                   }}
                                 >
-                                  <div className="text-white">
-                                    <div className="text-sm mb-1">
-                                      {option.text}
-                                    </div>
-                                    <div>{percentage}%</div>
-                                  </div>
+                                  <div className="text-sm mb-1">{option.text}</div>
+                                  <div>{percentage}%</div>
                                 </button>
+
                               );
                             })}
                           </div>
                         </>
                       ) : (
                         <>
-                          {/* 일반 게시글 */}
-                          {/* 작성자 */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-                            <span className="text-xs text-gray-600">
-                              {post.author}
-                            </span>
-                          </div>
-
                           {/* 내용 */}
-                          <p className="text-sm mb-3">
-                            {post.content}
-                          </p>
+                          <p className="text-sm mb-3">{post.content}</p>
 
                           {/* 이미지 */}
                           {post.imageUrl && (
@@ -787,62 +929,47 @@ const handleDeleteComment = async (
                             />
                           )}
 
-                          {/* 좋아요 */}
-                          <div className="flex items-center justify-between mb-3">
-                            <button
-                              onClick={() =>
-                                handleLike(team.id, post.id)
-                              }
-                              className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition-colors"
-                            >
-                              <Heart
-                                className={`w-4 h-4 ${post.isLiked ? "fill-red-500 text-red-500" : ""}`}
-                              />
-                              {post.likes > 0 && (
-                                <span className="text-xs">
-                                  {post.likes}
-                                </span>
-                              )}
-                            </button>
-                          </div>
-
                           {/* 댓글 목록 */}
                           {post.comments.length > 0 && (
                             <div className="border-t pt-3 mb-3 space-y-2">
                               {post.comments.map((comment) => (
-                                <div
-                                  key={comment.id}
-                                  className="flex gap-2"
-                                >
-                                  <div className="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0"></div>
+                                <div key={comment.id} className="flex gap-2">
+                                  <div className="w-5 h-5 rounded-full bg-gray-200"></div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 justify-between">
+                                    <div className="flex items-center justify-between gap-2">
                                       <div className="flex items-center gap-2">
                                         <span className="text-xs text-gray-600">
                                           {comment.author}
                                         </span>
-                                        <span className="text-xs text-gray-400">
-                                          {comment.timestamp}
-                                        </span>
+                                          <span className="text-xs text-gray-400">
+                                            {formatDateOnly(comment.timestamp)}
+                                          </span>
+
                                       </div>
                                       {comment.isWrite && (
                                         <button
-                                          onClick={() => handleDeleteComment(comment.id)}
-                                          aria-label="댓글 삭제"
-                                          className="ml-2 p-1 rounded hover:bg-red-50 transition-colors"
+                                          onClick={() =>
+                                            handleDeleteComment(
+                                              team.id,
+                                              comment.id
+                                            )
+                                          }
+                                          className="p-1 hover:bg-red-50 rounded"
                                         >
                                           <Trash2 className="w-4 h-4 text-red-500" />
                                         </button>
                                       )}
                                     </div>
-                                    <p className="text-xs text-gray-800 mt-0.5">
+
+                                    <p className="text-xs text-gray-800 mt-1">
                                       {comment.content}
                                     </p>
+
                                     {comment.imageUrl && (
                                       <img
                                         src={comment.imageUrl}
                                         alt="comment"
-                                        className="w-full rounded-lg mt-2 object-cover max-h-40"
+                                        className="w-full rounded-lg mt-2 max-h-40 object-cover"
                                       />
                                     )}
                                   </div>
@@ -861,35 +988,33 @@ const handleDeleteComment = async (
                                   className="w-full rounded-lg object-cover max-h-32"
                                 />
                                 <button
-                                  onClick={() => {
+                                  onClick={() =>
                                     setCommentImages({
                                       ...commentImages,
                                       [post.id]: null,
-                                    });
-                                  }}
+                                    })
+                                  }
                                   className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70"
                                 >
                                   <X className="w-4 h-4 text-white" />
                                 </button>
                               </div>
                             )}
+
                             <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
                               <input
                                 type="file"
                                 accept="image/*"
-                                id={`comment-image-text-${post.id}`}
+                                id={`comment-image-${post.id}`}
                                 className="hidden"
                                 onChange={(e) => {
-                                  const file =
-                                    e.target.files?.[0];
+                                  const file = e.target.files?.[0];
                                   if (file) {
-                                    const reader =
-                                      new FileReader();
+                                    const reader = new FileReader();
                                     reader.onloadend = () => {
                                       setCommentImages({
                                         ...commentImages,
-                                        [post.id]:
-                                          reader.result as string,
+                                        [post.id]: reader.result as string,
                                       });
                                     };
                                     reader.readAsDataURL(file);
@@ -901,47 +1026,37 @@ const handleDeleteComment = async (
                                 onClick={() => {
                                   document
                                     .getElementById(
-                                      `comment-image-text-${post.id}`,
+                                      `comment-image-${post.id}`
                                     )
                                     ?.click();
                                 }}
                               >
                                 <ImageIcon className="w-4 h-4" />
                               </button>
+
                               <input
                                 type="text"
-                                value={
-                                  commentInputs[post.id] || ""
-                                }
+                                value={commentInputs[post.id] || ""}
                                 onChange={(e) =>
-                                  handleCommentInputChange(
-                                    post.id,
-                                    e.target.value,
-                                  )
+                                  setCommentInputs({
+                                    ...commentInputs,
+                                    [post.id]: e.target.value,
+                                  })
                                 }
                                 onKeyPress={(e) => {
                                   if (e.key === "Enter") {
-                                    handleAddComment(
-                                      team.id,
-                                      post.id,
-                                    );
+                                    handleAddComment(team.id, post.id);
                                   }
                                 }}
                                 placeholder="댓글 입력..."
                                 className="flex-1 bg-transparent text-xs outline-none"
                               />
+
                               <button
                                 onClick={() =>
-                                  handleAddComment(
-                                    team.id,
-                                    post.id,
-                                  )
+                                  handleAddComment(team.id, post.id)
                                 }
-                                disabled={
-                                  !commentInputs[
-                                    post.id
-                                  ]?.trim()
-                                }
+                                disabled={!commentInputs[post.id]?.trim()}
                                 className="text-gray-400 hover:text-[#67594C] disabled:opacity-30 transition-colors"
                               >
                                 <Send className="w-4 h-4" />
@@ -953,12 +1068,16 @@ const handleDeleteComment = async (
                     </div>
                   ))}
 
-                  {/* 댓글 추가 영역 */}
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
                     <button
                       onClick={() => {
-                        setSelectedTeamId(team.id);
-                        setShowAddPostDialog(true);
+                        console.log(
+                          "[EventMainPage] 팀 카드 내 게시글 추가 버튼 클릭",
+                          {
+                            teamId: team.id,
+                          }
+                        );
+                        openPostDialog(team.id);
                       }}
                       className="text-sm text-gray-500 hover:text-gray-700"
                     >
@@ -970,184 +1089,104 @@ const handleDeleteComment = async (
             ))}
           </div>
         </div>
-
-        {/* 오른쪽 사이드바 */}
-        {showChatSidebar && (
-          <div className="w-80 bg-white border-l flex flex-col">
-            {/* 헤더 */}
-            <div className="border-b p-4">
-              <h3
-                className="text-sm"
-                style={{ color: "#67594C" }}
-              >
-                팀원 채팅
-              </h3>
-            </div>
-
-            {/* 팀원 채팅 목록 */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-3">
-                {[
-                  {
-                    name: "작성자 닉네임",
-                    message: "고양이 모아는 뭐가 좋을까요?",
-                    time: "11:23",
-                  },
-                  {
-                    name: "작성자 닉네임",
-                    message: "고양이 모아는 뭐가 좋을까요?",
-                    time: "10:15",
-                  },
-                  {
-                    name: "작성자 닉네임",
-                    message: "고양이 모아는 뭐가 좋을까요?",
-                    time: "09:42",
-                  },
-                  {
-                    name: "작성자 닉네임",
-                    message: "고양이 모아는 뭐가 좋을까요?",
-                    time: "어제",
-                  },
-                  {
-                    name: "작성자 닉네임",
-                    message: "고양이 모아는 뭐가 좋을까요?",
-                    time: "어제",
-                  },
-                ].map((chat, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center text-sm flex-shrink-0">
-                      {chat.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm">
-                          {chat.name}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {chat.time}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 truncate">
-                        {chat.message}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 프로필 카드 */}
-        <div
-          className="absolute right-4 top-4 z-20"
-          style={{ right: showChatSidebar ? "324px" : "16px" }}
-        >
-          <div className="bg-white border shadow-lg rounded-2xl p-4 w-20 flex flex-col items-center gap-3">
-            <button
-              onClick={() => navigate("/mypage")}
-              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
-            >
-              <UserCircle
-                className="w-8 h-8"
-                style={{ color: "#67594C" }}
-              />
-            </button>
-            <div className="text-center">
-              <p
-                className="text-xs"
-                style={{ color: "#67594C" }}
-              >
-                {user?.nickname || "닉네임"}
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setShowChatSidebar(!showChatSidebar)
-              }
-              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
-            >
-              <MessageCircle
-                className="w-8 h-8"
-                style={{ color: "#67594C" }}
-              />
-            </button>
-          </div>
-        </div>
       </div>
-
-      {/* 플로팅 버튼 - 새 포스트 추가 */}
-      <button
-        onClick={() => {
-          setSelectedTeamId(myTeam?.id || "");
-          setShowAddPostDialog(true);
-        }}
-        className="fixed left-8 bottom-8 w-12 h-12 rounded-full bg-[#67594C] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
       {/* 게시글 추가 다이얼로그 */}
       <Dialog
         open={showAddPostDialog}
-        onOpenChange={setShowAddPostDialog}
+        onOpenChange={(open) => {
+          console.log("[EventMainPage] 게시글 다이얼로그 openChange", open);
+          if (!open) {
+            closePostDialog();
+          } else {
+            setShowAddPostDialog(true);
+          }
+        }}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>새 게시글 작성</DialogTitle>
+            <DialogTitle>
+              {editingPost ? "게시글 수정" : "새 게시글 작성"}
+            </DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="team">팀 선택</Label>
-              <select
-                id="team"
-                value={selectedTeamId}
-                onChange={(e) =>
-                  setSelectedTeamId(e.target.value)
-                }
-                className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white"
-              >
-                <option value="">팀을 선택하세요</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name} {team.isMyTeam ? "(내 팀)" : ""}
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="team">선택된 팀</Label>
+              {selectedTeamId ? (
+                <div className="w-full mt-2 rounded-[15px] border border-gray-200 px-4 py-3 bg-gray-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      {selectedTeam?.name ?? `팀 ID ${selectedTeamId}`}
+                    </p>
+                    {selectedTeam?.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                        {selectedTeam.description}
+                      </p>
+                    )}
+                  </div>
+                  {isPostTeamLocked && (
+                    <span className="text-[11px] text-gray-400">
+                      그룹 카드에서 변경
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <select
+                  id="team"
+                  value={selectedTeamId}
+                  onChange={(e) => {
+                    console.log(
+                      "[EventMainPage] 게시글 작성 팀 선택 변경",
+                      e.target.value
+                    );
+                    setSelectedTeamId(e.target.value);
+                    setIsPostTeamLocked(false);
+                  }}
+                  className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white"
+                >
+                  <option value="">팀을 선택하세요</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} {team.isMyTeam ? "(내 팀)" : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
+
             <div>
               <Label htmlFor="content">내용</Label>
               <Textarea
                 id="content"
                 value={newPostContent}
-                onChange={(e) =>
-                  setNewPostContent(e.target.value)
-                }
+                onChange={(e) => setNewPostContent(e.target.value)}
                 placeholder="게시글 내용을 입력하세요"
                 className="mt-2 min-h-[120px] rounded-[10px] resize-none"
               />
             </div>
+
             <div>
               <Label htmlFor="postType">게시글 유형</Label>
+
               <div className="relative">
                 <button
                   className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white flex items-center justify-between"
                   onClick={() =>
-                    setShowPostTypeMenu(!showPostTypeMenu)
+                    setShowPostTypeMenu((prev) => !prev)
                   }
                 >
-                  {postType === "text"
-                    ? "일반 게시글"
-                    : "투표 게시글"}
+                  {postType === "text" ? "일반 게시글" : "투표 게시글"}
                 </button>
+
                 {showPostTypeMenu && (
                   <div className="absolute left-0 top-full w-full bg-white border border-gray-300 rounded-b-[15px] z-10">
                     <button
                       className="w-full px-4 py-2 text-left hover:bg-gray-100"
                       onClick={() => {
+                        console.log(
+                          "[EventMainPage] 게시글 유형 선택: text"
+                        );
                         setPostType("text");
                         setShowPostTypeMenu(false);
                       }}
@@ -1157,6 +1196,9 @@ const handleDeleteComment = async (
                     <button
                       className="w-full px-4 py-2 text-left hover:bg-gray-100"
                       onClick={() => {
+                        console.log(
+                          "[EventMainPage] 게시글 유형 선택: vote"
+                        );
                         setPostType("vote");
                         setShowPostTypeMenu(false);
                       }}
@@ -1167,78 +1209,144 @@ const handleDeleteComment = async (
                 )}
               </div>
             </div>
+
             {postType === "vote" && (
               <>
                 <div>
-                  <Label htmlFor="pollQuestion">
-                    투표 질문
-                  </Label>
+                  <Label>투표 질문</Label>
                   <input
                     type="text"
-                    id="pollQuestion"
                     value={pollQuestion}
-                    onChange={(e) =>
-                      setPollQuestion(e.target.value)
-                    }
+                    onChange={(e) => setPollQuestion(e.target.value)}
                     placeholder="투표 질문을 입력하세요"
-                    className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white"
+                    className="w-full mt-2 h-[51px] rounded-[15px] border px-4 bg-white"
                   />
                 </div>
+
                 <div>
-                  <Label htmlFor="pollOption1">
-                    투표 옵션 1
-                  </Label>
+                  <Label>투표 옵션 1</Label>
                   <input
                     type="text"
-                    id="pollOption1"
                     value={pollOption1}
-                    onChange={(e) =>
-                      setPollOption1(e.target.value)
-                    }
-                    placeholder="투표 옵션 1을 입력하세요"
-                    className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white"
+                    onChange={(e) => setPollOption1(e.target.value)}
+                    placeholder="옵션 1"
+                    className="w-full mt-2 h-[51px] rounded-[15px] border px-4 bg.white"
                   />
                 </div>
+
                 <div>
-                  <Label htmlFor="pollOption2">
-                    투표 옵션 2
-                  </Label>
+                  <Label>투표 옵션 2</Label>
                   <input
                     type="text"
-                    id="pollOption2"
                     value={pollOption2}
-                    onChange={(e) =>
-                      setPollOption2(e.target.value)
-                    }
-                    placeholder="투표 옵션 2을 입력하세요"
-                    className="w-full mt-2 h-[51px] rounded-[15px] border border-gray-300 px-4 bg-white"
+                    onChange={(e) => setPollOption2(e.target.value)}
+                    placeholder="옵션 2"
+                    className="w-full mt-2 h-[51px] rounded-[15px] border px-4 bg.white"
                   />
                 </div>
               </>
             )}
           </div>
-          <div className="flex gap-2 justify-end">
+
+          <div className="flex justify-end gap-2">
+            <EventeeButton variant="ghost" onClick={closePostDialog}>
+              취소
+            </EventeeButton>
+
             <EventeeButton
-              variant="ghost"
-              onClick={() => {
-                setShowAddPostDialog(false);
-                setNewPostContent("");
-                setSelectedTeamId("");
-                setNewPostImage(null);
-                setPollQuestion("");
-                setPollOption1("");
-                setPollOption2("");
-              }}
+              onClick={handleSubmitPost}
+              disabled={!newPostContent.trim() || !selectedTeamId}
             >
+              {editingPost ? "수정하기" : "작성하기"}
+            </EventeeButton>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={groupEditDialogOpen}
+        onOpenChange={(open) => {
+          console.log("[EventMainPage] 그룹 수정 다이얼로그 openChange", open);
+          if (!open) {
+            closeGroupEditDialog();
+          } else {
+            setGroupEditDialogOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>그룹 정보 수정</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {groupEditForm.imgUrl && (
+              <div className="w-full rounded-2xl overflow-hidden border">
+                <img
+                  src={groupEditForm.imgUrl}
+                  alt="그룹 이미지 미리보기"
+                  className="w-full h-40 object-cover"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="groupName">그룹 이름</Label>
+              <input
+                id="groupName"
+                type="text"
+                value={groupEditForm.groupName}
+                onChange={(e) =>
+                  handleGroupEditInputChange("groupName", e.target.value)
+                }
+                className="w-full mt-2 h-[48px] rounded-[12px] border border-gray-300 px-4 bg-white"
+                placeholder="그룹 이름을 입력하세요"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="groupDescription">그룹 소개</Label>
+              <Textarea
+                id="groupDescription"
+                value={groupEditForm.groupDescription}
+                onChange={(e) =>
+                  handleGroupEditInputChange(
+                    "groupDescription",
+                    e.target.value
+                  )
+                }
+                className="mt-2 min-h-[90px] rounded-[12px]"
+                placeholder="간단한 소개를 입력하세요"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="groupImg">이미지 URL</Label>
+              <input
+                id="groupImg"
+                type="text"
+                value={groupEditForm.imgUrl}
+                onChange={(e) =>
+                  handleGroupEditInputChange("imgUrl", e.target.value)
+                }
+                className="w-full mt-2 h-[48px] rounded-[12px] border border-gray-300 px-4 bg-white"
+                placeholder="https://"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                이미지 업로드 기능 준비 중입니다. URL을 직접 입력해주세요.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <EventeeButton variant="ghost" onClick={closeGroupEditDialog}>
               취소
             </EventeeButton>
             <EventeeButton
-              onClick={handleAddPost}
-              disabled={
-                !newPostContent.trim() || !selectedTeamId
-              }
+              onClick={handleSubmitGroupEdit}
+              disabled={!groupEditForm.groupName.trim()}
             >
-              작성하기
+              저장
             </EventeeButton>
           </div>
         </DialogContent>
