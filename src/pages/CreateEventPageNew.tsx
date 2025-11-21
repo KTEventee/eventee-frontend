@@ -100,7 +100,7 @@ export default function CreateEventPageNew() {
       {/* 뒤로가기 */}
       <div className="absolute right-12 top-8">
         <button
-          onClick={() => navigate("/mypage")}
+          onClick={() => navigate("/my-page")}
           className="p-2 hover:bg-white/50 rounded-lg transition-colors"
           type="button"
         >
