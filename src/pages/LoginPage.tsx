@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-// import { useApp, type User } from "../contexts/AppContext";
 import EventeeButton from "../components/EventeeButton";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -18,7 +17,6 @@ const buildGoogleOAuthUrl = (target: string) => {
   );
 };
 
-
 export default function LoginPage() {
   const navigate = useNavigate();
 
@@ -31,28 +29,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
+        {/* 브랜드 로고 영역 */}
         <div className="text-center mb-12">
-          <h1 className="text-[30px] font-bold">
-            Even<span style={{ color: "#67594C" }}>Tee</span>
+          <h1 className="text-[38px] font-extrabold tracking-tight">
+            Even<span className="text-[#67594C]">Tee</span>
           </h1>
+          <p className="mt-2 text-gray-500 text-sm">
+            쉽고 빠른 이벤트 관리 플랫폼
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <h2 className="text-center mb-6">로그인/회원가입</h2>
+        {/* 카드 */}
+        <div className="bg-white rounded-2xl shadow-lg p-10 border border-gray-100">
+          <h2 className="text-center text-lg font-medium mb-8 text-gray-700">
+            로그인 또는 회원가입
+          </h2>
 
-          <div className="space-y-3">
+          <div className="flex flex-col gap-4">
+            {/* 구글 로그인 */}
             <button
               onClick={handleGoogleLogin}
-              className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3 h-[59px] rounded-[9px] transition-all"
+              className="w-full bg-white border border-gray-300 text-gray-700 
+                         hover:bg-gray-100 flex items-center justify-center gap-3 
+                         h-[56px] rounded-xl transition-all shadow-sm"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-              >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path
                   d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
                   fill="#4285F4"
@@ -73,14 +76,20 @@ export default function LoginPage() {
               Google로 계속하기
             </button>
 
+            {/* 이벤트 참여 버튼 */}
             <EventeeButton
               onClick={handleJoinEvent}
-              className="w-full"
+              className="w-full h-[56px] rounded-xl text-base font-medium"
             >
               이벤트 참여하기
             </EventeeButton>
           </div>
         </div>
+
+        {/* 하단 안내 */}
+        <p className="mt-10 text-center text-gray-400 text-xs">
+          본 서비스는 소셜 로그인 정보를 기반으로 안전하게 운영됩니다.
+        </p>
       </div>
     </div>
   );

@@ -32,7 +32,6 @@ export default function JoinEventPage() {
     setLoading(true);
 
     try {
-      // apiFetch로 변경
       const response = await apiFetch(
         `${API_URL}/api/v1/events/validate?code=${code}`,
         { method: "GET" }
@@ -47,11 +46,8 @@ export default function JoinEventPage() {
       }
 
       const upperCode = code.toUpperCase();
-
-      // 초대 코드 저장
       setInviteCode(upperCode);
 
-      // 비밀번호 입력 페이지로 이동 + state 전달
       navigate("/event-password", {
         state: { inviteCode: upperCode },
       });
@@ -67,25 +63,36 @@ export default function JoinEventPage() {
     user?.role === "admin" || user?.role === "master_admin";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center px-4 relative">
+
+      {/* 로고 */}
+      <div className="absolute left-10 top-10">
+        <h1 className="text-[30px] font-bold tracking-tight">
+          Even<span className="text-[#67594C]">Tee</span>
+        </h1>
+      </div>
+
+      <div className="w-full max-w-md pt-16">
+
+        {/* 타이틀 */}
         <div className="text-center mb-12">
-          <h1 className="text-[30px] font-bold">
-            Even<span style={{ color: "#67594C" }}>Tee</span>
-          </h1>
+          <h2 className="text-[28px] font-semibold tracking-tight text-[#67594C]">
+            초대 코드 입력
+          </h2>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8 mb-4">
-          <div className="flex items-center gap-2 mb-6">
-            <h2>초대 코드 입력</h2>
-          </div>
+        {/* 코드 입력 카드 */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-10 mb-10">
+          <p className="text-gray-600 text-[14px] mb-4">
+            참여하려면 초대 코드를 입력하세요
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Input
                 id="inviteCode"
                 type="text"
-                placeholder="6자리 초대 코드 입력"
+                placeholder="6자리 초대 코드"
                 value={code}
                 onChange={(e) => {
                   const value = e.target.value
@@ -94,7 +101,7 @@ export default function JoinEventPage() {
                   setCode(value);
                   setError("");
                 }}
-                className="mt-2 uppercase h-[59px]"
+                className="mt-2 uppercase h-[56px] text-center text-[20px] tracking-[0.2em]"
                 maxLength={6}
               />
               {error && (
@@ -102,28 +109,37 @@ export default function JoinEventPage() {
               )}
             </div>
 
-            <EventeeButton type="submit" className="w-full" disabled={loading}>
+            <EventeeButton 
+              type="submit" 
+              className="w-full h-[56px] text-[16px]" 
+              disabled={loading}
+            >
               {loading ? "확인 중..." : "다음으로"}
             </EventeeButton>
           </form>
         </div>
 
+        {/* 이벤트 만들기 카드 (관리자 전용) */}
         {canCreateEvent && (
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
             <div className="flex items-center justify-between">
+
               <div>
-                <h3 className="mb-1">이벤트 만들기</h3>
+                <h3 className="font-semibold text-[18px] text-[#67594C] mb-1">
+                  이벤트 만들기
+                </h3>
                 <p className="text-sm text-gray-600">
-                  새로운 이벤트를 생성하고 참가자를 초대하세요
+                  새로운 이벤트를 생성하고 참여자를 초대하세요
                 </p>
               </div>
+
               <Button
                 onClick={() => navigate("/create-event")}
                 size="icon"
-                className="rounded-full h-12 w-12 flex-shrink-0"
+                className="rounded-full h-12 w-12 bg-[#67594C] hover:bg-[#574A3F]"
               >
                 <svg
-                  className="h-6 w-6"
+                  className="h-6 w-6 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -134,6 +150,7 @@ export default function JoinEventPage() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

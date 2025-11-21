@@ -39,7 +39,7 @@ https://www.eventee.cloud/join?code=${inviteCode}`;
     const textArea = document.createElement("textarea");
     textArea.value = inviteMessage;
     textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
+    textArea.style.left = "-9999px";
     document.body.appendChild(textArea);
     textArea.select();
 
@@ -53,89 +53,90 @@ https://www.eventee.cloud/join?code=${inviteCode}`;
   };
 
   return (
-    <div className="bg-[#faf9f6] min-h-screen relative">
-      
-      {/* Eventtee 로고 */}
-      <div className="absolute left-8 top-8">
-        <p className="text-[26px] font-bold tracking-tight">
-          Even<span className="text-[#67594c]">Tee</span>
-        </p>
+    <div className="bg-[#FAF9F6] min-h-screen relative">
+
+      {/* 로고 */}
+      <div className="absolute left-10 top-10">
+        <h1 className="text-[30px] font-bold tracking-tight">
+          Even<span className="text-[#67594C]">Tee</span>
+        </h1>
       </div>
 
-      {/* 메인 */}
-      <div className="flex flex-col items-center justify-center pt-32 pb-20 px-4">
-        <h1 className="text-[32px] font-semibold text-[#67594c] mb-12 tracking-tight">
+      {/* 메인 컨테이너 */}
+      <div className="max-w-4xl mx-auto pt-40 pb-24 px-6">
+
+        <h1 className="text-[34px] text-center font-semibold text-[#67594C] mb-16 tracking-tight">
           초대 코드 생성 완료
         </h1>
 
-        <div className="w-full max-w-[850px] space-y-8">
+        <div className="space-y-10">
           
-          {/* 코드 카드 */}
-          <div className="bg-white rounded-[12px] p-10 shadow-sm border border-gray-100">
-            <h2 className="text-[20px] font-semibold mb-2 text-[#3b3b3b]">
+          {/* 초대 코드 카드 */}
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-12">
+            <h2 className="text-[22px] font-semibold text-[#3B3B3B] mb-2">
               행사 코드
             </h2>
-            <p className="text-[13px] text-gray-500 mb-8">
-              생성된 초대 코드를 복사해 참여자에게 공유하세요
+            <p className="text-[14px] text-gray-500 mb-10">
+              아래 코드를 복사하여 참여자에게 공유하세요
             </p>
 
-            <div className="bg-neutral-100 rounded-[12px] py-12 flex items-center justify-center mb-6 shadow-inner">
-              <p className="text-[56px] text-black font-mono tracking-[0.15em]">
+            <div className="bg-[#F0EFEA] rounded-2xl py-14 flex items-center justify-center shadow-inner mb-8">
+              <p className="text-[60px] font-mono tracking-[0.18em] text-[#333]">
                 {inviteCode}
               </p>
             </div>
 
-            {/* 날짜 */}
-            <div className="text-center space-y-2 text-[13px] text-gray-600">
-              <p>시작 : <span className="font-medium">{formatDateTime(startAt)}</span></p>
-              <p>종료 : <span className="font-medium">{formatDateTime(endAt)}</span></p>
+            {/* 날짜 정보 */}
+            <div className="text-center space-y-2 text-[14px] text-gray-600">
+              <p>
+                시작 : <span className="font-medium">{formatDateTime(startAt)}</span>
+              </p>
+              <p>
+                종료 : <span className="font-medium">{formatDateTime(endAt)}</span>
+              </p>
             </div>
           </div>
 
           {/* 초대 문구 */}
-          <div className="bg-white rounded-[12px] p-10 shadow-sm border border-gray-100">
-            <div className="bg-neutral-100 rounded-[12px] p-8 mb-8 border border-neutral-200">
-              <div className="text-[15px] text-black whitespace-pre-wrap leading-relaxed">
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-12">
+
+            <div className="bg-[#F8F7F3] rounded-2xl p-8 border border-neutral-200 mb-10 shadow-sm">
+              <div className="text-[15px] leading-relaxed text-[#333] whitespace-pre-wrap">
                 {inviteMessage}
               </div>
             </div>
 
-           <div className="flex justify-end">
-            <button
-              onClick={handleCopyInvite}
-              className="
-                flex items-center justify-center gap-2
-                px-8 py-3
-                rounded-[12px]
-                border border-[#c8c3be]
-                text-[#67594c]
-                bg-white
-                hover:bg-[#f3f1ee]
-                active:bg-[#e7e4e1]
-                transition-all
-              "
-            >
-              {copied ? (
-                <>
-                  <Check className="h-[18px] w-[18px]" />
-                  <span className="text-[16px] leading-none">복사 완료!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-[18px] w-[18px]" />
-                  <span className="text-[16px] leading-none">초대 문구 복사</span>
-                </>
-              )}
-            </button>
-          </div>
+            {/* 복사 버튼 */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleCopyInvite}
+                className="
+                  flex items-center justify-center gap-2
+                  px-8 py-3 rounded-xl
+                  border border-[#C8C3BE]
+                  text-[#67594C] bg-white
+                  hover:bg-[#EEEAE6] active:bg-[#E6E2DD]
+                  transition-all shadow-sm
+                "
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-[20px] w-[20px]" />
+                    <span className="text-[16px]">복사 완료!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-[20px] w-[20px]" />
+                    <span className="text-[16px]">초대 문구 복사</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-
-
-            {/* 돌아가기 버튼 */}
-            <div className="flex justify-center mt-12">
+            {/* 돌아가기 */}
+            <div className="mt-14 flex justify-center">
               <EventeeButton
                 onClick={() => navigate("/my-page")}
-                variant="primary"
                 className="px-12 py-3 text-[16px]"
               >
                 마이페이지로 돌아가기

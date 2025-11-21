@@ -22,13 +22,11 @@ type JoinedEvent = {
 export default function MyPage() {
   const navigate = useNavigate();
   const { user, setUser, logout } = useApp();
-
   const [joinedEvents, setJoinedEvents] = useState<JoinedEvent[]>([]);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // 마이페이지 정보 로딩
   useEffect(() => {
     apiFetch(`${API_URL}/api/v1/member/mypage`, { method: "GET" })
       .then((res) => res.json())
@@ -45,7 +43,6 @@ export default function MyPage() {
       });
   }, [API_URL, setUser]);
 
-  // 로그아웃
   const handleLogout = async () => {
     try {
       await apiFetch(`${API_URL}/api/v1/auth/logout`, { method: "POST" });
@@ -59,21 +56,21 @@ export default function MyPage() {
 
   return (
     <>
-      <div className="min-h-screen px-4 py-6 relative bg-[#faf9f6]">
+      <div className="min-h-screen px-4 py-6 relative bg-[#FAF9F6]">
         <div className="max-w-5xl mx-auto">
 
           {/* 헤더 */}
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold">
-              Even<span style={{ color: "#67594C" }}>Tee</span>
+          <div className="flex items-center justify-between mb-10">
+            <h1 className="text-4xl font-extrabold tracking-tight">
+              Even<span className="text-[#67594C]">Tee</span>
             </h1>
           </div>
 
-          {/* 프로필 영역 */}
-          <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
+          {/* 프로필 카드 */}
+          <div className="bg-white rounded-3xl shadow-md p-10 mb-12 border border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-[#D2CDBC] flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-[#D2CDBC] flex items-center justify-center shadow-inner">
                   {user.profileImageUrl ? (
                     <img
                       src={user.profileImageUrl}
@@ -85,15 +82,20 @@ export default function MyPage() {
                   )}
                 </div>
 
-                <h2 className="text-2xl font-semibold" style={{ color: "#67594C" }}>
-                  {user.nickname ?? "사용자"}
-                </h2>
+                <div>
+                  <h2 className="text-3xl font-semibold text-[#67594C]">
+                    {user.nickname ?? "사용자"}
+                  </h2>
+                  <p className="text-gray-500 mt-1">
+                    내 이벤트 관리 공간
+                  </p>
+                </div>
               </div>
 
               <div className="flex gap-3">
                 <EventeeButton
                   variant="ghost"
-                  className="px-6"
+                  className="px-6 h-[44px]"
                   onClick={() => setProfileModalOpen(true)}
                 >
                   프로필 수정
@@ -102,7 +104,7 @@ export default function MyPage() {
                 <EventeeButton
                   variant="ghost"
                   onClick={handleLogout}
-                  className="px-6"
+                  className="px-6 h-[44px]"
                 >
                   로그아웃
                 </EventeeButton>
@@ -111,19 +113,19 @@ export default function MyPage() {
           </div>
 
           {/* 참여 이벤트 리스트 */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold" style={{ color: "#67594C" }}>
-                참여중인 이벤트
-              </h2>
-            </div>
+          <div className="mb-14">
+            <h2 className="text-2xl font-semibold mb-6 text-[#67594C]">
+              참여중인 이벤트
+            </h2>
 
             {joinedEvents.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-                <p className="text-gray-500">참여한 이벤트가 없습니다</p>
+              <div className="bg-white rounded-3xl shadow-sm p-14 text-center border border-gray-100">
+                <p className="text-gray-500 text-lg">
+                  참여한 이벤트가 없습니다
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
                 {joinedEvents.map((event) => {
                   const isHost = event.role === "HOST";
@@ -132,16 +134,17 @@ export default function MyPage() {
                     <div
                       key={event.eventId}
                       className={`
-                        rounded-2xl overflow-hidden relative transition p-0
+                        rounded-3xl overflow-hidden relative transition 
+                        hover:shadow-lg 
                         ${isHost 
-                          ? "border-2 border-[#67594C] bg-[#f4f1eb] shadow-lg" 
-                          : "bg-white shadow-sm"
+                          ? "border-2 border-[#67594C] bg-[#F3F0EA]" 
+                          : "bg-white border border-gray-100 shadow-sm"
                         }
                       `}
                     >
-                      {/* HOST 뱃지 */}
+
                       {isHost && (
-                        <div className="absolute top-3 right-3 bg-[#67594C] text-white px-3 py-1 rounded-full text-xs shadow">
+                        <div className="absolute top-4 right-4 bg-[#67594C] text-white px-3 py-1 rounded-full text-xs shadow">
                           HOST
                         </div>
                       )}
@@ -157,50 +160,32 @@ export default function MyPage() {
 
                       {/* 내용 */}
                       <div className="p-6">
-
-                        {/* 제목 + 왕관 */}
-                        <div className="flex items-center gap-2 mb-3">
-                          <h3
-                            className="font-semibold text-lg"
-                            style={{ color: "#67594C" }}
-                          >
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg text-[#67594C]">
                             {event.title}
                           </h3>
-
-                          {isHost && (
-                            <Crown
-                              size={18}
-                              className="text-[#67594C]"
-                            />
-                          )}
+                          {isHost && <Crown size={18} className="text-[#67594C]" />}
                         </div>
 
-                        {/* 날짜 */}
-                        <div className="text-sm text-gray-600 mb-4 leading-relaxed">
+                        <div className="text-sm text-gray-600 mb-4">
                           {event.startAt?.split("T")[0]}  
                           <span className="mx-1">~</span>
                           {event.endAt?.split("T")[0]}
                         </div>
 
                         <div className="flex items-center justify-between">
-
-                          {/* 참가자 이미지 */}
                           <div className="flex -space-x-2">
                             {event.participantProfileImages.slice(0, 3).map((img, idx) => (
                               <img
                                 key={idx}
                                 src={img}
-                                className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                className="w-9 h-9 rounded-full border-2 border-white object-cover"
                               />
                             ))}
 
                             {event.participantsCount > 3 && (
                               <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs border-2 border-white"
-                                style={{
-                                  backgroundColor: "#E9E5DA",
-                                  color: "#67594C",
-                                }}
+                                className="w-9 h-9 rounded-full flex items-center justify-center text-xs border-2 border-white bg-[#E9E5DA] text-[#67594C]"
                               >
                                 +{event.participantsCount - 3}
                               </div>
@@ -208,7 +193,7 @@ export default function MyPage() {
                           </div>
 
                           <EventeeButton
-                            className="px-6"
+                            className="px-6 h-[40px]"
                             onClick={() =>
                               navigate("/event-password", {
                                 state: {
@@ -228,15 +213,14 @@ export default function MyPage() {
                     </div>
                   );
                 })}
-
               </div>
             )}
           </div>
 
-          {/* 이벤트 생성 버튼 */}
+          {/* 이벤트 생성 Floating 버튼 */}
           <button
             onClick={() => navigate("/create-event")}
-            className="fixed bottom-10 right-10 bg-[#67594C] text-white px-6 py-4 rounded-full shadow-lg hover:bg-[#564a3f] transition"
+            className="fixed bottom-10 right-10 bg-[#67594C] text-white px-7 py-4 rounded-full shadow-xl hover:bg-[#54473C] transition-all"
           >
             + 이벤트 생성하기
           </button>
