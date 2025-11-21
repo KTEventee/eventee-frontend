@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { Calendar } from "../components/ui/calendar";
+
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+
 import {
   Popover,
   PopoverContent,
@@ -21,10 +24,11 @@ export default function CreateEventPageNew() {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [teamCount, setTeamCount] = useState("");
+
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const API_URL = import.meta.env.VITE_API_URL;
 
   const formatDateTime = (date: Date) => {
@@ -89,7 +93,6 @@ export default function CreateEventPageNew() {
 
   return (
     <div className="bg-[#FAF9F6] min-h-screen relative">
-
       {/* 로고 */}
       <div className="absolute left-10 top-10">
         <p className="text-[30px] font-bold tracking-tight">
@@ -156,19 +159,20 @@ export default function CreateEventPageNew() {
                     >
                       {startDate
                         ? startDate.toLocaleDateString("ko-KR")
-                        : "시작 날짜를 선택하세요"}
+                        : "시작 날짜 선택"}
                     </button>
                   </PopoverTrigger>
 
-                  <PopoverContent className="p-0 w-auto z-[9999]">
-                    <Calendar
+                  <PopoverContent className="p-0 w-[320px] z-[9999] rounded-xl shadow-lg bg-white">
+                    <DayPicker
                       mode="single"
                       selected={startDate}
-                      onSelect={(newDate) => {
-                        setStartDate(newDate);
+                      onSelect={(day) => {
+                        setStartDate(day ?? undefined);
                         setShowStartCalendar(false);
                         setErrors({ ...errors, startDate: "" });
                       }}
+                      numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>
@@ -194,19 +198,20 @@ export default function CreateEventPageNew() {
                     >
                       {endDate
                         ? endDate.toLocaleDateString("ko-KR")
-                        : "종료 날짜를 선택하세요"}
+                        : "종료 날짜 선택"}
                     </button>
                   </PopoverTrigger>
 
-                  <PopoverContent className="p-0 w-auto z-[9999]">
-                    <Calendar
+                  <PopoverContent className="p-0 w-[320px] z-[9999] rounded-xl shadow-lg bg-white">
+                    <DayPicker
                       mode="single"
                       selected={endDate}
-                      onSelect={(newDate) => {
-                        setEndDate(newDate);
+                      onSelect={(day) => {
+                        setEndDate(day ?? undefined);
                         setShowEndCalendar(false);
                         setErrors({ ...errors, endDate: "" });
                       }}
+                      numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>
@@ -277,10 +282,7 @@ export default function CreateEventPageNew() {
 
             {/* 제출 */}
             <div className="pt-8">
-              <EventeeButton
-                type="submit"
-                className="w-full h-[56px] text-[16px]"
-              >
+              <EventeeButton type="submit" className="w-full h-[56px] text-[16px]">
                 행사 생성하기
               </EventeeButton>
             </div>
