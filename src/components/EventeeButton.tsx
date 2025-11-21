@@ -23,12 +23,27 @@ const EventeeButton = forwardRef<
     ref,
   ) => {
     const baseStyles =
-      "relative h-[59px] rounded-[9px] px-6 transition-all duration-200";
+        "relative px-6 py-[14px] rounded-[9px] transition-all duration-200 flex items-center justify-center";
+
 
     const variants = {
-      primary: `bg-[#67594c] text-white shadow-[0px_4px_61px_0px_rgba(77,71,195,0.4)] hover:bg-[#7a6a5c] active:shadow-[0px_2px_30px_0px_rgba(77,71,195,0.3)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`,
-      outline: `bg-white border-2 border-[#67594c] text-[#67594c] hover:bg-[#FAF9F6] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`,
-      ghost: `bg-transparent text-[#67594c] hover:bg-[#FAF9F6] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`,
+      primary: `
+        bg-[#67594c] text-white
+        shadow-[0px_4px_20px_rgba(103,89,76,0.35)]
+        hover:bg-[#7a6a5c]
+        active:shadow-[0px_2px_12px_rgba(103,89,76,0.25)]
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+      `,
+      outline: `
+        bg-white border-2 border-[#67594c] text-[#67594c]
+        hover:bg-[#FAF9F6]
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+      `,
+      ghost: `
+        bg-transparent text-[#67594c]
+        hover:bg-[#FAF9F6]
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+      `,
     };
 
     return (
