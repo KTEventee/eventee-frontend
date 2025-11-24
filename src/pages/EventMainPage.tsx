@@ -640,84 +640,91 @@ export default function EventMainPage() {
   return (
     <div className="h-screen flex flex-col">
       {/* 헤더 */}
-      <div className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-[30px] font-bold">
-            Event<span style={{ color: "#67594C" }}>Tee</span>
-          </h1>
-          <div className="hidden sm:flex flex-col text-gray-600">
-            <p className="text-sm">
-              {headerTitleText}
-              {eventPeriod && (
-                <span className="ml-1 text-xs text-gray-500">
-                  ({eventPeriod})
-                </span>
-              )}
-            </p>
-            {headerSubtitleText && (
-              <p className="text-xs text-gray-500 mt-0.5">
-                {headerSubtitleText}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="bg-white border-b px-8 py-6 flex items-start justify-between sticky top-0 z-10">
+  {/* 왼쪽: 제목 + 설명 */}
+  <div className="flex flex-col">
+    {/* 로고 + 이벤트 타이틀 */}
+    <div className="flex items-center gap-4 mb-1">
+      <h1 className="text-[30px] font-bold leading-none">
+        Event<span style={{ color: "#67594C" }}>ee</span>
+      </h1>
 
-        <div className="flex items-center gap-3">
-          {isEventHost && (
-            <EventeeButton
-              variant="outline"
-              onClick={() => {
-                const eventData = {
-                    id: String(eventInfo?.eventId),
-                    title: eventInfo?.title ?? "",
-                    description: eventInfo?.description ?? "",
-                    inviteCode: eventCode,
-                    startDate: eventInfo?.startAt ? new Date(eventInfo.startAt) : null,
-                    endDate: eventInfo?.endAt ? new Date(eventInfo.endAt) : null,
-                    createdBy: user?.id ?? "",
-                  };
+      <div className="flex flex-col">
+        <p className="text-[20px] font-bold leading-none text-[#8C7A67]">
 
-                  console.log(">>> setting event", eventData);
-
-                  setCurrentEvent(eventData);  
-                  localStorage.setItem("currentEvent", JSON.stringify(eventData));
-                  navigate("/admin-dashboard");
-              }}
-            >
-            운영자 페이지
-            </EventeeButton>
-
-
+          {headerTitleText}
+          {eventPeriod && (
+            <span className="ml-2 text-[14px] text-gray-500 font-normal">
+              ({eventPeriod})
+            </span>
           )}
-
-          <button
-            type="button"
-            onClick={() => navigate("/my-page")}
-            className="flex items-center gap-3 px-3 py-2 rounded-full bg-gray-50 hover:bg-gray-100 transition"
-          >
-            {user?.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt="프로필"
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[#67594C] text-white flex items-center justify-center text-sm font-semibold">
-                {userInitial}
-              </div>
-            )}
-
-            <div className="text-left">
-              <p className="text-sm font-medium text-gray-800">
-                {displayNickname}
-              </p>
-              <p className="text-xs text-gray-500">
-                {user?.email || "마이페이지 이동"}
-              </p>
-            </div>
-          </button>
-        </div>
+        </p>
       </div>
+    </div>
+
+    {/* 이벤트 설명 — 간격 줄임 */}
+    {headerSubtitleText && (
+      <p className="text-sm text-gray-600 leading-snug max-w-[780px] mt-1">
+        {headerSubtitleText}
+      </p>
+    )}
+  </div>
+
+  {/* 오른쪽: 운영자 버튼 + 프로필 */}
+  <div className="flex items-center gap-4">
+    {isEventHost && (
+      <EventeeButton
+        variant="outline"
+        className="h-[42px] px-5 text-sm font-medium border-[#67594C] text-[#67594C]"
+        onClick={() => {
+          const eventData = {
+            id: String(eventInfo?.eventId),
+            title: eventInfo?.title ?? "",
+            description: eventInfo?.description ?? "",
+            inviteCode: eventCode,
+            startDate: eventInfo?.startAt ? new Date(eventInfo.startAt) : null,
+            endDate: eventInfo?.endAt ? new Date(eventInfo.endAt) : null,
+            createdBy: user?.id ?? "",
+          };
+          setCurrentEvent(eventData);
+          localStorage.setItem("currentEvent", JSON.stringify(eventData));
+          navigate("/admin-dashboard");
+        }}
+      >
+        운영자 페이지
+      </EventeeButton>
+    )}
+
+    {/* 프로필 */}
+    <button
+      type="button"
+      onClick={() => navigate("/my-page")}
+      className="flex items-center gap-3 px-3 py-2 rounded-full bg-gray-50 hover:bg-gray-100 transition"
+    >
+      {user?.profileImageUrl ? (
+        <img
+          src={user.profileImageUrl}
+          alt="프로필"
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-[#67594C] text-white flex items-center justify-center text-sm font-semibold">
+          {userInitial}
+        </div>
+      )}
+
+      <div className="text-left">
+        <p className="text-sm font-medium text-gray-800">
+          {displayNickname}
+        </p>
+        <p className="text-xs text-gray-500">
+          {user?.email || "마이페이지 이동"}
+        </p>
+      </div>
+    </button>
+  </div>
+</div>
+
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 flex overflow-hidden relative">

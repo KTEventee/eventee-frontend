@@ -46,7 +46,7 @@ export default function AdminDashboard() {
                 className="text-xl font-semibold tracking-tight"
                 style={{ color: "#67594C" }}
               >
-                EventTee{" "}
+                EvenTee{" "}
                 <span className="text-sm" style={{ color: "#FFAB5D" }}>
                   관리자
                 </span>
