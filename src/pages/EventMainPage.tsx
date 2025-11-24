@@ -727,28 +727,48 @@ export default function EventMainPage() {
             {teams.map((team) => (
               <div key={team.id} className="w-[280px] flex-shrink-0">
                 {/* 팀 헤더 */}
+                {/* 팀 헤더 (이미지 + 이름 + 소개 + 수정 버튼) */}
                 <div
-                  className={`rounded-t-xl px-4 py-3 flex items-center justify-between ${
+                  className={`rounded-t-xl overflow-hidden ${
                     team.isMyTeam ? "ring-2 ring-[#67594C]" : ""
                   }`}
                   style={{ backgroundColor: team.color }}
                 >
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm">{team.name}</h3>
-                    <button
-                      onClick={() => openGroupEditDialog(team)}
-                      className="p-1 rounded hover:bg-white/40 transition"
-                      title="그룹 정보 수정"
-                    >
-                      <Pencil className="w-3 h-3 text-gray-700" />
-                    </button>
-                    {team.isMyTeam && (
-                      <span className="text-xs bg.white/40 px-2 py-0.5 rounded">
-                        내 팀
-                      </span>
+                  {/* 상단 이미지 영역 */}
+                  <div className="w-full h-28 bg-gray-200">
+                    <img
+                      src={team.img || "/default-event.jpg"}
+                      alt={`${team.name} 이미지`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* 텍스트 정보 */}
+                  <div className="px-4 py-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {team.name}
+                      </h3>
+
+                      <button
+                        onClick={() => openGroupEditDialog(team)}
+                        className="p-1 rounded hover:bg-white/40 transition"
+                        title="그룹 정보 수정"
+                      >
+                        <Pencil className="w-4 h-4 text-gray-700" />
+                      </button>
+                    </div>
+
+                    {team.description ? (
+                      <p className="text-xs text-gray-700 whitespace-pre-line">
+                        {team.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">소개가 없습니다</p>
                     )}
                   </div>
                 </div>
+
 
                 {/* 그룹 내부 스크롤 영역 */}
                 <div
