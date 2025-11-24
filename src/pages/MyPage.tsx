@@ -152,11 +152,15 @@ export default function MyPage() {
                       {/* 썸네일 */}
                       <div className="relative h-48 bg-gray-200">
                         <img
-                          src={event.thumbnailUrl}
+                          src={event.thumbnailUrl || "/default-event.png"}
                           alt={event.title}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-event.png";
+                          }}
                         />
                       </div>
+
 
                       {/* 내용 */}
                       <div className="p-6">
@@ -217,13 +221,25 @@ export default function MyPage() {
             )}
           </div>
 
-          {/* 이벤트 생성 Floating 버튼 */}
-          <button
-            onClick={() => navigate("/create-event")}
-            className="fixed bottom-10 right-10 bg-[#67594C] text-white px-7 py-4 rounded-full shadow-xl hover:bg-[#54473C] transition-all"
-          >
-            + 이벤트 생성하기
-          </button>
+          <div className="fixed bottom-10 right-10 flex flex-col gap-3">
+
+            {/* 참여하기 버튼 → /join-event */}
+            <button
+              onClick={() => navigate("/join-event")}
+              className="bg-white text-[#67594C] border border-[#67594C] px-7 py-4 rounded-full shadow-md hover:bg-[#F3F0EA] transition-all"
+            >
+              이벤트 참여하기
+            </button>
+
+            {/* 기존 이벤트 생성 버튼 */}
+            <button
+              onClick={() => navigate("/create-event")}
+              className="bg-[#67594C] text-white px-7 py-4 rounded-full shadow-xl hover:bg-[#54473C] transition-all"
+            >
+              + 이벤트 생성하기
+            </button>
+
+          </div>
         </div>
       </div>
 
