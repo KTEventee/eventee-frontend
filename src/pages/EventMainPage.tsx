@@ -460,7 +460,7 @@ export default function EventMainPage() {
         ? [pollOption1, pollOption2]
             .map((opt) => opt?.trim())
             .filter(Boolean)
-            .join(", ")
+            .join("_")
         : null,
     };
 
