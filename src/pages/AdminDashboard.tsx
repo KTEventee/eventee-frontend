@@ -1,230 +1,240 @@
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
-import EventeeButton from '../components/EventeeButton';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { User, Users, MessageSquare, Gamepad2, Heart, Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../contexts/AppContext";
+import EventeeButton from "../components/EventeeButton";
+import { Button } from "../components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import {
+  Users,
+  MessageSquare,
+  Gamepad2,
+  Heart,
+  ArrowLeft
+} from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, currentEvent, logout } = useApp();
-  
+
   if (!currentEvent || !user) return null;
+
   const event = currentEvent;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-[#E8E4D9] border-b border-[#D5D0C4] sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl mb-1" style={{ color: '#67594C' }}>
-                Even<span style={{ color: '#67594C' }}>tee</span> <span className="text-sm" style={{ color: '#FFAB5D' }}>관리자</span>
+          <div className="flex items-center justify-between gap-4">
+            
+            {/* 이벤트 정보 */}
+            <div className="flex flex-col gap-1">
+              <h1
+                className="text-xl font-semibold tracking-tight"
+                style={{ color: "#67594C" }}
+              >
+                EventTee{" "}
+                <span className="text-sm" style={{ color: "#FFAB5D" }}>
+                  관리자
+                </span>
               </h1>
-              <h2 className="text-2xl" style={{ color: '#67594C' }}>{event.title}</h2>
+
+              <h2
+                className="text-2xl font-bold truncate max-w-[250px] sm:max-w-none"
+                style={{ color: "#67594C" }}
+              >
+                {event.title}
+              </h2>
+
               <p className="text-sm text-gray-600">
-                {format(event.startDate, 'yyyy.MM.dd', { locale: ko })} - {format(event.endDate, 'yyyy.MM.dd', { locale: ko })}
+                {format(event.startDate, "yyyy.MM.dd", { locale: ko })} ~{" "}
+                {format(event.endDate, "yyyy.MM.dd", { locale: ko })}
               </p>
             </div>
-            
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <div className="py-6 space-y-4">
-                  <div className="flex items-center gap-3 pb-4 border-b">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-                      {user.nickname.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div>{user.nickname}</div>
-                      <div className="text-sm text-gray-600">{user.email}</div>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => navigate('/my-page')}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    마이페이지
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => {
-                      logout();
-                      navigate('/');
-                    }}
-                  >
-                    로그아웃
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
+
+            {/* 오른쪽: 뒤로가기 버튼 */}
+            <div>
+             <Button
+                variant="outline"
+                onClick={() =>
+                  navigate("/event-main", {
+                    state: {
+                      eventId: currentEvent.id,
+                      eventTitle: currentEvent.title,
+                      eventCode: currentEvent.inviteCode,
+                      nickname: user.nickname
+                    },
+                  })
+                }
+              >
+                이벤트 화면으로 돌아가기
+              </Button>
+
+            </div>
+
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 sm:py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-white">
-            <TabsTrigger value="overview">개요</TabsTrigger>
-            <TabsTrigger value="team">팀 빌딩</TabsTrigger>
-            <TabsTrigger value="chat">채팅</TabsTrigger>
-            <TabsTrigger value="rolling">롤링 페이퍼</TabsTrigger>
-            <TabsTrigger value="games">미니게임</TabsTrigger>
+
+          {/* Tabs Header */}
+          <TabsList className="bg-transparent border-b border-[#DDD6CE] rounded-none px-0">
+            <TabsTriggerStyled value="overview">대시보드</TabsTriggerStyled>
+            <TabsTriggerStyled value="participants">참여자 관리</TabsTriggerStyled>
+            <TabsTriggerStyled value="notice">공지 작성</TabsTriggerStyled>
+            <TabsTriggerStyled value="groups">그룹 관리</TabsTriggerStyled>
+            <TabsTriggerStyled value="games">게임 관리</TabsTriggerStyled>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>이벤트 정보</CardTitle>
-                <CardDescription>{event.description}</CardDescription>
+          {/* 대시보드 */}
+          <TabsContent value="overview" className="space-y-6">
+
+            {/* 이벤트 정보 */}
+            <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[#67594C] text-lg">
+                  이벤트 정보
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  {event.description || "이벤트 설명이 아직 입력되지 않았습니다."}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">초대 코드</div>
-                    <div className="text-2xl font-mono">{event.inviteCode}</div>
-                  </div>
-                  
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">참가자 수</div>
-                    <div className="text-2xl">24명</div>
-                  </div>
-                  
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">팀 수</div>
-                    <div className="text-2xl">6개 팀</div>
-                  </div>
+
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <InfoBox label="초대 코드" value={event.inviteCode} color="#FFAB5D" />
+                  <InfoBox label="참가자 수" value="24명" color="#A8CBAA" />
+                  <InfoBox label="팀 수" value="6개 팀" color="#C7D2FE" />
                 </div>
               </CardContent>
             </Card>
 
+            {/* 기능 카드 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    팀 빌딩
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">참가자들과 팀을 구성하고 함께 활동하세요</p>
-                  <EventeeButton className="w-full">팀 빌딩 시작하기</EventeeButton>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    채팅
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">팀원들과 실시간으로 소통하세요</p>
-                  <EventeeButton className="w-full">채팅 참여하기</EventeeButton>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    롤링 페이퍼
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">참가자들에게 응원 메시지를 남겨보세요</p>
-                  <EventeeButton className="w-full" variant="outline">메시지 작성하기</EventeeButton>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gamepad2 className="h-5 w-5" />
-                    미니게임
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">재미있는 게임으로 팀워크를 높여보세요</p>
-                  <EventeeButton className="w-full" variant="outline">게임 시작하기</EventeeButton>
-                </CardContent>
-              </Card>
+              <FeatureCard
+                icon={<Users className="h-5 w-5 text-[#67594C]" />}
+                title="참여자 관리"
+                description="참여자 목록을 확인하고 상태를 관리하는 기능입니다."
+                button="참여자 관리 열기"
+              />
+              <FeatureCard
+                icon={<MessageSquare className="h-5 w-5 text-[#67594C]" />}
+                title="공지 작성"
+                description="공지사항을 작성하고 참가자에게 전달하는 기능입니다."
+                button="공지 작성하기"
+              />
+              <FeatureCard
+                icon={<Heart className="h-5 w-5 text-[#67594C]" />}
+                title="그룹 관리"
+                description="팀/그룹 생성과 구성원 관리를 담당합니다."
+                button="그룹 관리하기"
+              />
+              <FeatureCard
+                icon={<Gamepad2 className="h-5 w-5 text-[#67594C]" />}
+                title="게임 관리"
+                description="이벤트 진행용 게임 관리 기능입니다."
+                button="기능 추가 예정입니다"
+                outline
+                disabled
+              />
             </div>
+
           </TabsContent>
 
-          <TabsContent value="team">
-            <Card>
-              <CardHeader>
-                <CardTitle>팀 빌딩</CardTitle>
-                <CardDescription>팀을 구성하고 관리하세요</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  팀 빌딩 기능은 곧 추가될 예정입니다
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* 나머지 탭들 */}
+          <PlaceholderTab value="participants" title="참여자 관리" />
+          <PlaceholderTab value="notice" title="공지 작성" />
+          <PlaceholderTab value="groups" title="그룹 관리" />
+          <PlaceholderTab value="games" title="게임 관리" />
 
-          <TabsContent value="chat">
-            <Card>
-              <CardHeader>
-                <CardTitle>채팅</CardTitle>
-                <CardDescription>참가자들과 실시간으로 소통하세요</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  채팅 기능은 곧 추가될 예정입니다
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="rolling">
-            <Card>
-              <CardHeader>
-                <CardTitle>롤링 페이퍼</CardTitle>
-                <CardDescription>참가자들에게 응원 메시지를 남겨보세요</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  롤링 페이퍼 기능은 곧 추가될 예정입니다
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="games">
-            <Card>
-              <CardHeader>
-                <CardTitle>미니게임</CardTitle>
-                <CardDescription>재미있는 게임으로 팀워크를 높여보세요</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  미니게임 기능은 곧 추가될 예정입니다
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </main>
     </div>
+  );
+}
+
+/* ----------------- COMPONENTS ----------------- */
+
+function TabsTriggerStyled({ value, children }) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="rounded-none px-4 pb-2 pt-1 text-sm text-gray-500
+                 data-[state=active]:border-b-2 data-[state=active]:border-[#67594C]
+                 data-[state=active]:text-[#67594C] data-[state=active]:font-semibold"
+    >
+      {children}
+    </TabsTrigger>
+  );
+}
+
+function InfoBox({ label, value, color }) {
+  return (
+    <div
+      className="rounded-xl p-4 shadow-sm"
+      style={{ backgroundColor: `${color}22` }}
+    >
+      <p className="text-sm text-gray-600 mb-1">{label}</p>
+      <p className="text-xl font-semibold" style={{ color: "#67594C" }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description, button, outline, disabled }) {
+  return (
+    <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-[#67594C]">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-600 mb-4 text-sm">{description}</p>
+        <EventeeButton
+          className="w-full"
+          variant={outline ? "outline" : "default"}
+          disabled={disabled}
+        >
+          {button}
+        </EventeeButton>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PlaceholderTab({ value, title }) {
+  return (
+    <TabsContent value={value}>
+      <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
+        <CardHeader>
+          <CardTitle className="text-[#67594C]">{title}</CardTitle>
+          <CardDescription>기능이 곧 추가될 예정입니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10 text-gray-500">
+            준비 중입니다.
+          </div>
+        </CardContent>
+      </Card>
+    </TabsContent>
   );
 }

@@ -90,7 +90,8 @@ type GroupEditFormState = {
 export default function EventMainPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useApp();
+  const { user, setCurrentEvent, currentEvent } = useApp();
+
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -100,6 +101,23 @@ export default function EventMainPage() {
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+
+  // location.state 없으면 currentEvent 사용
+  useEffect(() => {
+    if (!location.state && currentEvent) {
+      const restoredState = {
+        eventId: Number(currentEvent.id),
+        eventTitle: currentEvent.title,
+        eventCode: currentEvent.inviteCode,
+        nickname: user?.nickname,
+      };
+
+      navigate("/event-main", { state: restoredState, replace: true });
+    }
+  }, []);
+
+
+  
 
   const [showAddPostDialog, setShowAddPostDialog] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
@@ -177,6 +195,7 @@ export default function EventMainPage() {
         eventTitle: legacyEventTitle,
         description,
         eventDescription,
+        eventRole,
         startAt,
         endAt,
         thumbnailUrl,
@@ -197,7 +216,7 @@ export default function EventMainPage() {
         endAt,
         thumbnailUrl,
         teamCount,
-        role,
+        role: eventRole,
         nickname,
       });
 
@@ -614,16 +633,9 @@ export default function EventMainPage() {
   const isEventHost =
     (eventInfo?.role ?? user?.role)?.toUpperCase() === "HOST";
 
-  const displayNickname =
-    eventInfo?.nickname ??
-    location.state?.eventNickname ??
-    user?.nickname ??
-    user?.email ??
-    "닉네임";
+  const displayNickname = location.state?.nickname ?? eventInfo?.nickname ?? "닉네임";
 
-  // ===================================================
-  // ==================== UI 시작 ======================
-  // ===================================================
+
 
   return (
     <div className="h-screen flex flex-col">
@@ -655,11 +667,27 @@ export default function EventMainPage() {
             <EventeeButton
               variant="outline"
               onClick={() => {
-                navigate("/admin-dashboard", { state: { eventId } });
+                const eventData = {
+                    id: String(eventInfo?.eventId),
+                    title: eventInfo?.title ?? "",
+                    description: eventInfo?.description ?? "",
+                    inviteCode: eventCode,
+                    startDate: eventInfo?.startAt ? new Date(eventInfo.startAt) : null,
+                    endDate: eventInfo?.endAt ? new Date(eventInfo.endAt) : null,
+                    createdBy: user?.id ?? "",
+                  };
+
+                  console.log(">>> setting event", eventData);
+
+                  setCurrentEvent(eventData);  
+                  localStorage.setItem("currentEvent", JSON.stringify(eventData));
+                  navigate("/admin-dashboard");
               }}
             >
-              운영자 페이지
+            운영자 페이지
             </EventeeButton>
+
+
           )}
 
           <button
