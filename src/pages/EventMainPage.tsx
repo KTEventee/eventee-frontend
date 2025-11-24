@@ -725,97 +725,99 @@ export default function EventMainPage() {
         <div className="flex-1 overflow-x-auto px-4 py-6">
           <div className="flex gap-4 min-w-min">
             {teams.map((team) => (
-              <div key={team.id} className="w-[280px] flex-shrink-0">
-                {/* 팀 헤더 */}
-                {/* 팀 헤더 (이미지 + 이름 + 소개 + 수정 버튼) */}
-                <div
-                  className={`rounded-t-xl overflow-hidden ${
-                    team.isMyTeam ? "ring-2 ring-[#67594C]" : ""
-                  }`}
-                  style={{ backgroundColor: team.color }}
-                >
-                  {/* 상단 이미지 영역 */}
-                  <div className="w-full h-28 bg-gray-200">
-                    <img
-                      src={team.img || "/default-event.jpg"}
-                      alt={`${team.name} 이미지`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+  <div
+    key={team.id}
+    className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow w-[280px] flex-shrink-0"
+  >
+    {/* 팀 헤더 */}
+    <div
+      className={`rounded-t-xl overflow-hidden ${
+        team.isMyTeam ? "ring-2 ring-[#67594C]" : ""
+      }`}
+      style={{ backgroundColor: team.color }}
+    >
+      {/* 상단 이미지 영역 */}
+      <div className="w-full h-28 bg-gray-200">
+        <img
+          src={team.img || "/default-event.png"}
+          alt={`${team.name} 이미지`}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-                  {/* 텍스트 정보 */}
-                  <div className="px-4 py-3 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        {team.name}
-                      </h3>
+      {/* 텍스트 정보 */}
+      <div
+        className="px-4 py-3 space-y-1" style={{ backgroundColor: team.color }}>
 
-                      <button
-                        onClick={() => openGroupEditDialog(team)}
-                        className="p-1 rounded hover:bg-white/40 transition"
-                        title="그룹 정보 수정"
-                      >
-                        <Pencil className="w-4 h-4 text-gray-700" />
-                      </button>
-                    </div>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-900">
+            {team.name}
+          </h3>
 
-                    {team.description ? (
-                      <p className="text-xs text-gray-700 whitespace-pre-line">
-                        {team.description}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-400 italic">소개가 없습니다</p>
-                    )}
-                  </div>
+          <button
+            onClick={() => openGroupEditDialog(team)}
+            className="p-1 rounded hover:bg-gray-100 transition"
+            title="그룹 정보 수정"
+          >
+            <Pencil className="w-4 h-4 text-gray-700" />
+          </button>
+        </div>
+
+        {team.description ? (
+          <p className="text-xs text-gray-700 whitespace-pre-line">
+            {team.description}
+          </p>
+        ) : (
+          <p className="text-xs text-gray-400 italic">소개가 없습니다</p>
+        )}
+      </div>
+    </div>
+
+    {/* 그룹 내부 스크롤 영역 */}
+    <div
+      className="space-y-3 mt-3 overflow-y-auto pr-1 px-2 pb-4"
+      style={{
+        maxHeight: "calc(100vh - 220px)",
+      }}
+    >
+      {team.posts.map((post) => {
+        const isVotePost =
+          post.type === "vote" &&
+          Array.isArray(post.pollOptions) &&
+          post.pollOptions.length > 0;
+
+        return (
+          <div
+            key={post.id}
+            className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
+          >
+            {/* 게시글 헤더 */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-300" />
+                <span className="text-xs text-gray-600">
+                  {post.author}
+                </span>
+              </div>
+              {post.isWrite && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openPostDialog(team.id, post)}
+                    className="p-1 rounded hover:bg-gray-100"
+                    title="게시글 수정"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <button
+                    onClick={() => handleDeletePost(team.id, post.id)}
+                    className="p-1 rounded hover:bg-red-50"
+                    title="게시글 삭제"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
                 </div>
-
-
-                {/* 그룹 내부 스크롤 영역 */}
-                <div
-                  className="space-y-3 mt-3 overflow-y-auto pr-1"
-                  style={{
-                    maxHeight: "calc(100vh - 220px)",
-                  }}
-                >
-                  {team.posts.map((post) => {
-                    const isVotePost =
-                      post.type === "vote" &&
-                      Array.isArray(post.pollOptions) &&
-                      post.pollOptions.length > 0;
-
-                    return (
-                      <div
-                        key={post.id}
-                        className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gray-300" />
-                            <span className="text-xs text-gray-600">
-                              {post.author}
-                            </span>
-                          </div>
-                          {post.isWrite && (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => openPostDialog(team.id, post)}
-                                className="p-1 rounded hover:bg-gray-100"
-                                title="게시글 수정"
-                              >
-                                <Pencil className="w-4 h-4 text-gray-500" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleDeletePost(team.id, post.id)
-                                }
-                                className="p-1 rounded hover:bg-red-50"
-                                title="게시글 삭제"
-                              >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+              )}
+            </div>
 
                         {isVotePost ? (
                           <>
