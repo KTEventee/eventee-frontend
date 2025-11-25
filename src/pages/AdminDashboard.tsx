@@ -36,7 +36,6 @@ export default function AdminDashboard() {
 
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
-  const [newGroupImg, setNewGroupImg] = useState("");
 
   if (!currentEvent || !user) return null;
   const event = currentEvent;
@@ -95,8 +94,7 @@ export default function AdminDashboard() {
       const body = {
         eventId: event.id,
         groupName: newGroupName,
-        groupDescription: newGroupDesc,
-        imgUrl: newGroupImg,
+        groupDescription: newGroupDesc
       };
 
       const res = await apiFetch(`${API_URL}/api/v1/group/admin`, {
@@ -109,7 +107,6 @@ export default function AdminDashboard() {
 
       setNewGroupName("");
       setNewGroupDesc("");
-      setNewGroupImg("");
 
       loadGroups();
     } catch (e) {
@@ -214,10 +211,8 @@ export default function AdminDashboard() {
               deleteGroup={deleteGroup}
               newGroupName={newGroupName}
               newGroupDesc={newGroupDesc}
-              newGroupImg={newGroupImg}
               setNewGroupName={setNewGroupName}
               setNewGroupDesc={setNewGroupDesc}
-              setNewGroupImg={setNewGroupImg}
             />
           </TabsContent>
 
@@ -337,9 +332,8 @@ function ParticipantList({ loading, error, participants }: any) {
             flex flex-col gap-2
           "
         >
-          {/* 프로필 + 텍스트 (왼쪽정렬!!) */}
+          {/* 프로필 + 텍스트 */}
           <div className="flex items-center gap-3">
-            {/* 프로필 이미지 */}
             <div className="w-11 h-11 rounded-full overflow-hidden bg-[#EFECE6] flex items-center justify-center shadow-sm">
               {p.profileImageUrl ? (
                 <img
@@ -352,7 +346,6 @@ function ParticipantList({ loading, error, participants }: any) {
               )}
             </div>
 
-            {/* 텍스트 (왼쪽 정렬 유지) */}
             <div className="flex flex-col items-start">
               <span className="text-[14px] font-semibold text-[#67594C] leading-tight">
                 {p.nickname}
@@ -363,7 +356,7 @@ function ParticipantList({ loading, error, participants }: any) {
             </div>
           </div>
 
-          {/* 역할 배지 — 카드 오른쪽 상단 고정 */}
+          {/* 역할 배지 */}
           <span
             className={`
               absolute top-3 right-3
@@ -383,10 +376,6 @@ function ParticipantList({ loading, error, participants }: any) {
   );
 }
 
-
-
-
-
 /* ------------------------------
     그룹 관리
 ------------------------------ */
@@ -398,10 +387,8 @@ function GroupManagement({
   deleteGroup,
   newGroupName,
   newGroupDesc,
-  newGroupImg,
   setNewGroupName,
-  setNewGroupDesc,
-  setNewGroupImg,
+  setNewGroupDesc
 }: any) {
   return (
     <div className="space-y-6">
@@ -427,13 +414,6 @@ function GroupManagement({
             className="border border-[#DCD7CC] rounded-lg px-3 py-2 w-full bg-[#FAF9F6]"
           />
 
-          <input
-            placeholder="이미지 URL"
-            value={newGroupImg}
-            onChange={(e) => setNewGroupImg(e.target.value)}
-            className="border border-[#DCD7CC] rounded-lg px-3 py-2 w-full bg-[#FAF9F6]"
-          />
-
           <Button
             onClick={createGroup}
             className="w-full bg-[#67594C] hover:bg-[#594C41]"
@@ -456,7 +436,9 @@ function GroupManagement({
               className="p-5 flex justify-between items-start border border-[#E8E4D9] rounded-xl shadow-sm bg-white"
             >
               <div>
-                <CardTitle className="text-[#67594C] text-lg">{g.groupName}</CardTitle>
+                <CardTitle className="text-[#67594C] text-lg">
+                  {g.groupName}
+                </CardTitle>
                 <CardDescription className="text-gray-600">
                   {g.groupDescription}
                 </CardDescription>
