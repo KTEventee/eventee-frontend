@@ -77,7 +77,7 @@ export default function SignupPage() {
         return;
       }
 
-      // ★ currentEvent 타입과 맞도록 저장 (Event 타입에 맞게 축약)
+      // currentEvent 타입과 맞도록 저장
       setCurrentEvent({
         id: data.result.eventId,
         title: data.result.title,
@@ -94,6 +94,7 @@ export default function SignupPage() {
           eventId: data.result.eventId,
           eventTitle: data.result.title,
           eventCode: inviteCode,
+          nickname: nickname
         },
       });
 

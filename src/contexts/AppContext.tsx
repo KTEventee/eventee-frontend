@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 export type User = {
   id: string | null;
@@ -6,7 +6,7 @@ export type User = {
   email: string | null;
   socialId: string | null;
   profileImageUrl?: string | null;
-  role: 'user' | 'admin' | 'master_admin' | null;
+  role: "user" | "admin" | "master_admin" | null;
 };
 
 export type Event = {
@@ -35,27 +35,51 @@ type AppContextType = {
   logout: () => void;
 };
 
-
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-
-  // inviteCode 기본값: null
+  const [currentEvent, _setCurrentEvent] = useState<Event | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    const saved = localStorage.getItem("currentEvent");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+
+        parsed.startDate = parsed.startDate ? new Date(parsed.startDate) : null;
+        parsed.endDate = parsed.endDate ? new Date(parsed.endDate) : null;
+
+        _setCurrentEvent(parsed);
+      } catch (err) {
+        console.error("currentEvent 복구 실패:", err);
+      }
+    }
+  }, []);
+
+ 
+  const setCurrentEvent = (event: Event | null) => {
+    _setCurrentEvent(event);
+
+    if (event) {
+      localStorage.setItem("currentEvent", JSON.stringify(event));
+    } else {
+      localStorage.removeItem("currentEvent");
+    }
+  };
+
 
   const logout = () => {
     setUser(null);
     setAccessToken(null);
     setCurrentEvent(null);
-
-
     setInviteCode(null);
 
-    // localStorage 정리 
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("currentEvent");
   };
 
   return (
@@ -72,16 +96,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
       }}
     >
-
       {children}
     </AppContext.Provider>
   );
 }
 
 export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("useApp must be used within AppProvider");
+  return ctx;
 }
