@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
-import EventeeButton from "../components/EventeeButton";
 import { Button } from "../components/ui/button";
 import {
   Tabs,
@@ -15,225 +15,476 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import {
-  Users,
-  MessageSquare,
-  Gamepad2,
-  Heart,
-  ArrowLeft
-} from "lucide-react";
+import { Users, Plus, Trash2, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { apiFetch } from "../utils/apiFetch";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, currentEvent, logout } = useApp();
+  const { user, currentEvent } = useApp();
+
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [participantsError, setParticipantsError] = useState<string | null>(null);
+
+  const [groups, setGroups] = useState<any[]>([]);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState<string | null>(null);
+
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [newGroupImg, setNewGroupImg] = useState("");
 
   if (!currentEvent || !user) return null;
-
   const event = currentEvent;
 
+  /* ---------------------------
+      참여자 목록 API
+  --------------------------- */
+  async function loadParticipants() {
+    try {
+      setLoadingParticipants(true);
+      setParticipantsError(null);
+
+      const res = await apiFetch(
+        `${API_URL}/api/v1/events/admin/members?eventId=${event.id}`,
+        { method: "GET" }
+      );
+      const data = await res.json();
+
+      setParticipants(Array.isArray(data?.result) ? data.result : []);
+    } catch (e) {
+      setParticipantsError("참여자 목록을 불러오지 못했습니다.");
+    } finally {
+      setLoadingParticipants(false);
+    }
+  }
+
+  /* ---------------------------
+      그룹 목록 API
+  --------------------------- */
+  async function loadGroups() {
+    try {
+      setGroupLoading(true);
+      setGroupError(null);
+
+      const res = await apiFetch(
+        `${API_URL}/api/v1/events/${event.id}/groups`,
+        { method: "GET" }
+      );
+      const data = await res.json();
+
+      setGroups(Array.isArray(data?.result?.groups) ? data.result.groups : []);
+    } catch (e) {
+      setGroupError("그룹 목록을 불러오지 못했습니다.");
+    } finally {
+      setGroupLoading(false);
+    }
+  }
+
+  /* ---------------------------
+      그룹 생성
+  --------------------------- */
+  async function createGroup() {
+    if (!newGroupName.trim()) return alert("그룹명을 입력하세요");
+
+    try {
+      const body = {
+        eventId: event.id,
+        groupName: newGroupName,
+        groupDescription: newGroupDesc,
+        imgUrl: newGroupImg,
+      };
+
+      const res = await apiFetch(`${API_URL}/api/v1/group/admin`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!data.isSuccess) return alert("그룹 생성 실패");
+
+      setNewGroupName("");
+      setNewGroupDesc("");
+      setNewGroupImg("");
+
+      loadGroups();
+    } catch (e) {
+      alert("그룹 추가 중 오류 발생");
+    }
+  }
+
+  /* ---------------------------
+      그룹 삭제
+  --------------------------- */
+  async function deleteGroup(groupId: number) {
+    if (!confirm("정말로 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await apiFetch(`${API_URL}/api/v1/group/${groupId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!data.isSuccess) return alert("삭제 실패");
+
+      loadGroups();
+    } catch (e) {
+      alert("삭제 중 오류 발생");
+    }
+  }
+
+  /* ---------------------------
+      UI 렌더링
+  --------------------------- */
   return (
     <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
       {/* Header */}
-      <header className="bg-[#E8E4D9] border-b border-[#D5D0C4] sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            
-            {/* 이벤트 정보 */}
-            <div className="flex flex-col gap-1">
-              <h1
-                className="text-xl font-semibold tracking-tight"
-                style={{ color: "#67594C" }}
-              >
-                EvenTee{" "}
-                <span className="text-sm" style={{ color: "#FFAB5D" }}>
-                  관리자
-                </span>
-              </h1>
-
-              <h2
-                className="text-2xl font-bold truncate max-w-[250px] sm:max-w-none"
-                style={{ color: "#67594C" }}
-              >
-                {event.title}
-              </h2>
-
-              <p className="text-sm text-gray-600">
-                {format(event.startDate, "yyyy.MM.dd", { locale: ko })} ~{" "}
-                {format(event.endDate, "yyyy.MM.dd", { locale: ko })}
-              </p>
-            </div>
-
-            {/* 오른쪽: 뒤로가기 버튼 */}
-            <div>
-             <Button
-                variant="outline"
-                onClick={() =>
-                  navigate("/event-main", {
-                    state: {
-                      eventId: currentEvent.id,
-                      eventTitle: currentEvent.title,
-                      eventCode: currentEvent.inviteCode,
-                      nickname: user.nickname
-                    },
-                  })
-                }
-              >
-                이벤트 화면으로 돌아가기
-              </Button>
-
-            </div>
-
+      <header className="bg-[#E8E4D9] border-b border-[#D5D0C4] sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold text-[#67594C]">
+              EvenTee{" "}
+              <span className="text-sm text-[#FFAB5D]">관리자</span>
+            </h1>
+            <h2 className="text-2xl font-bold text-[#67594C] leading-tight">
+              {event.title}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {format(event.startDate, "yyyy.MM.dd", { locale: ko })} ~{" "}
+              {format(event.endDate, "yyyy.MM.dd", { locale: ko })}
+            </p>
           </div>
+
+          <Button
+            variant="outline"
+            onClick={() =>
+              navigate("/event-main", {
+                state: {
+                  eventId: event.id,
+                  eventTitle: event.title,
+                  eventCode: event.inviteCode,
+                  nickname: user.nickname,
+                },
+              })
+            }
+          >
+            이벤트 화면으로 돌아가기
+          </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 sm:py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-
-          {/* Tabs Header */}
-          <TabsList className="bg-transparent border-b border-[#DDD6CE] rounded-none px-0">
+      {/* Main */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+        <Tabs
+          defaultValue="overview"
+          onValueChange={(v) => {
+            if (v === "participants") loadParticipants();
+            if (v === "groups") loadGroups();
+          }}
+        >
+          <TabsList className="border-b border-[#DDD6CE] bg-transparent mb-6">
             <TabsTriggerStyled value="overview">대시보드</TabsTriggerStyled>
             <TabsTriggerStyled value="participants">참여자 관리</TabsTriggerStyled>
-            <TabsTriggerStyled value="notice">공지 작성</TabsTriggerStyled>
             <TabsTriggerStyled value="groups">그룹 관리</TabsTriggerStyled>
-            <TabsTriggerStyled value="games">게임 관리</TabsTriggerStyled>
+            <TabsTriggerStyled value="notice">공지 작성</TabsTriggerStyled>
           </TabsList>
 
-          {/* 대시보드 */}
-          <TabsContent value="overview" className="space-y-6">
-
-            {/* 이벤트 정보 */}
-            <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-[#67594C] text-lg">
-                  이벤트 정보
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  {event.description || "이벤트 설명이 아직 입력되지 않았습니다."}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <InfoBox label="초대 코드" value={event.inviteCode} color="#FFAB5D" />
-                  <InfoBox label="참가자 수" value="24명" color="#A8CBAA" />
-                  <InfoBox label="팀 수" value="6개 팀" color="#C7D2FE" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 기능 카드 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FeatureCard
-                icon={<Users className="h-5 w-5 text-[#67594C]" />}
-                title="참여자 관리"
-                description="참여자 목록을 확인하고 상태를 관리하는 기능입니다."
-                button="참여자 관리 열기"
-              />
-              <FeatureCard
-                icon={<MessageSquare className="h-5 w-5 text-[#67594C]" />}
-                title="공지 작성"
-                description="공지사항을 작성하고 참가자에게 전달하는 기능입니다."
-                button="공지 작성하기"
-              />
-              <FeatureCard
-                icon={<Heart className="h-5 w-5 text-[#67594C]" />}
-                title="그룹 관리"
-                description="팀/그룹 생성과 구성원 관리를 담당합니다."
-                button="그룹 관리하기"
-              />
-              <FeatureCard
-                icon={<Gamepad2 className="h-5 w-5 text-[#67594C]" />}
-                title="게임 관리"
-                description="이벤트 진행용 게임 관리 기능입니다."
-                button="기능 추가 예정입니다"
-                outline
-                disabled
-              />
-            </div>
-
+          <TabsContent value="overview">
+            <DashboardOverview event={event} />
           </TabsContent>
 
-          {/* 나머지 탭들 */}
-          <PlaceholderTab value="participants" title="참여자 관리" />
-          <PlaceholderTab value="notice" title="공지 작성" />
-          <PlaceholderTab value="groups" title="그룹 관리" />
-          <PlaceholderTab value="games" title="게임 관리" />
+          <TabsContent value="participants">
+            <ParticipantList
+              loading={loadingParticipants}
+              error={participantsError}
+              participants={participants}
+            />
+          </TabsContent>
 
+          <TabsContent value="groups">
+            <GroupManagement
+              loading={groupLoading}
+              error={groupError}
+              groups={groups}
+              createGroup={createGroup}
+              deleteGroup={deleteGroup}
+              newGroupName={newGroupName}
+              newGroupDesc={newGroupDesc}
+              newGroupImg={newGroupImg}
+              setNewGroupName={setNewGroupName}
+              setNewGroupDesc={setNewGroupDesc}
+              setNewGroupImg={setNewGroupImg}
+            />
+          </TabsContent>
+
+          <PlaceholderTab value="notice" title="공지 작성" />
         </Tabs>
       </main>
     </div>
   );
 }
 
-/* ----------------- COMPONENTS ----------------- */
-
-function TabsTriggerStyled({ value, children }) {
+/* ------------------------------
+    탭 스타일
+------------------------------ */
+function TabsTriggerStyled({ value, children }: any) {
   return (
     <TabsTrigger
       value={value}
-      className="rounded-none px-4 pb-2 pt-1 text-sm text-gray-500
-                 data-[state=active]:border-b-2 data-[state=active]:border-[#67594C]
-                 data-[state=active]:text-[#67594C] data-[state=active]:font-semibold"
+      className="px-4 pb-3 pt-2 text-sm text-gray-500
+      data-[state=active]:border-b-2 data-[state=active]:border-[#67594C]
+      data-[state=active]:text-[#67594C] data-[state=active]:font-semibold"
     >
       {children}
     </TabsTrigger>
   );
 }
 
-function InfoBox({ label, value, color }) {
+/* ------------------------------
+    Overview - 대시보드
+------------------------------ */
+function DashboardOverview({ event }: any) {
   return (
-    <div
-      className="rounded-xl p-4 shadow-sm"
-      style={{ backgroundColor: `${color}22` }}
-    >
-      <p className="text-sm text-gray-600 mb-1">{label}</p>
-      <p className="text-xl font-semibold" style={{ color: "#67594C" }}>
-        {value}
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 상단 이벤트 정보 */}
+      <Card className="p-6 bg-white border border-[#E8E4D9] shadow-sm rounded-xl col-span-3">
+        <CardHeader>
+          <CardTitle className="text-[#67594C] text-2xl font-bold">
+            {event.title}
+          </CardTitle>
+          <CardDescription className="text-gray-600 text-base leading-relaxed">
+            {event.description || "이벤트 설명이 아직 없습니다."}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <p className="text-sm text-gray-500">
+            {format(event.startDate, "yyyy.MM.dd", { locale: ko })} ~{" "}
+            {format(event.endDate, "yyyy.MM.dd", { locale: ko })}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Info cards */}
+      <InfoBox
+        label="초대 코드"
+        value={event.inviteCode}
+        color="#FFAB5D"
+        icon={<Layers className="w-6 h-6 text-[#67594C]" />}
+      />
+      <InfoBox
+        label="참가자 수"
+        value={event.participantCount ?? "-"}
+        color="#A8CBAA"
+        icon={<Users className="w-6 h-6 text-[#67594C]" />}
+      />
+      <InfoBox
+        label="팀 수"
+        value={event.groupCount ?? "-"}
+        color="#C7D2FE"
+        icon={<Layers className="w-6 h-6 text-[#67594C]" />}
+      />
     </div>
   );
 }
 
-function FeatureCard({ icon, title, description, button, outline, disabled }) {
+function InfoBox({ label, value, color, icon }: any) {
   return (
-    <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-[#67594C]">
-          {icon}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-gray-600 mb-4 text-sm">{description}</p>
-        <EventeeButton
-          className="w-full"
-          variant={outline ? "outline" : "default"}
-          disabled={disabled}
-        >
-          {button}
-        </EventeeButton>
-      </CardContent>
+    <Card
+      className="p-6 rounded-xl shadow-sm border border-[#E8E4D9] flex flex-col gap-3"
+      style={{ backgroundColor: `${color}22` }}
+    >
+      <div>{icon}</div>
+      <p className="text-sm text-gray-600">{label}</p>
+      <p className="text-3xl font-bold text-[#67594C]">{value}</p>
     </Card>
   );
 }
 
-function PlaceholderTab({ value, title }) {
+/* ------------------------------
+    참여자 리스트
+------------------------------ */
+function ParticipantList({ loading, error, participants }: any) {
+  if (loading)
+    return <div className="text-center py-10 text-gray-500">불러오는 중...</div>;
+  if (error)
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  if (!participants?.length)
+    return <div className="text-center py-10 text-gray-500">참여자가 없습니다.</div>;
+
+  return (
+    <div
+      className="
+        grid 
+        grid-cols-1 
+        sm:grid-cols-2 
+        lg:grid-cols-3 
+        gap-4
+      "
+    >
+      {participants.map((p: any) => (
+        <Card
+          key={p.id}
+          className="
+            w-full px-4 py-3 rounded-xl relative
+            border border-[#E4E0D7]
+            bg-gradient-to-br from-[#FCFBF9] to-[#F3F1EC]
+            shadow-sm hover:shadow-md transition-all
+            flex flex-col gap-2
+          "
+        >
+          {/* 프로필 + 텍스트 (왼쪽정렬!!) */}
+          <div className="flex items-center gap-3">
+            {/* 프로필 이미지 */}
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-[#EFECE6] flex items-center justify-center shadow-sm">
+              {p.profileImageUrl ? (
+                <img
+                  src={p.profileImageUrl}
+                  alt={p.nickname}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Users className="w-5 h-5 text-[#C6BEB0]" />
+              )}
+            </div>
+
+            {/* 텍스트 (왼쪽 정렬 유지) */}
+            <div className="flex flex-col items-start">
+              <span className="text-[14px] font-semibold text-[#67594C] leading-tight">
+                {p.nickname}
+              </span>
+              <span className="text-[12px] text-gray-500 leading-tight break-all">
+                {p.email}
+              </span>
+            </div>
+          </div>
+
+          {/* 역할 배지 — 카드 오른쪽 상단 고정 */}
+          <span
+            className={`
+              absolute top-3 right-3
+              px-2.5 py-1 rounded-full text-[11px] font-medium
+              ${
+                p.role === "ADMIN"
+                  ? "bg-[#FFAB5D22] text-[#B46A2A] border border-[#FFAB5D55]"
+                  : "bg-[#E8E4D9] text-[#67594C] border border-[#D7D2C8]"
+              }
+            `}
+          >
+            {p.role === "ADMIN" ? "관리자" : "참여자"}
+          </span>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+
+
+
+
+/* ------------------------------
+    그룹 관리
+------------------------------ */
+function GroupManagement({
+  loading,
+  error,
+  groups,
+  createGroup,
+  deleteGroup,
+  newGroupName,
+  newGroupDesc,
+  newGroupImg,
+  setNewGroupName,
+  setNewGroupDesc,
+  setNewGroupImg,
+}: any) {
+  return (
+    <div className="space-y-6">
+      {/* 그룹 생성 */}
+      <Card className="p-6 border border-[#E8E4D9] shadow-sm rounded-xl">
+        <CardTitle className="text-[#67594C] flex items-center gap-2 mb-4">
+          <Layers className="w-5 h-5" />
+          그룹 추가
+        </CardTitle>
+
+        <div className="space-y-3">
+          <input
+            placeholder="그룹명"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            className="border border-[#DCD7CC] rounded-lg px-3 py-2 w-full bg-[#FAF9F6]"
+          />
+
+          <input
+            placeholder="설명"
+            value={newGroupDesc}
+            onChange={(e) => setNewGroupDesc(e.target.value)}
+            className="border border-[#DCD7CC] rounded-lg px-3 py-2 w-full bg-[#FAF9F6]"
+          />
+
+          <input
+            placeholder="이미지 URL"
+            value={newGroupImg}
+            onChange={(e) => setNewGroupImg(e.target.value)}
+            className="border border-[#DCD7CC] rounded-lg px-3 py-2 w-full bg-[#FAF9F6]"
+          />
+
+          <Button
+            onClick={createGroup}
+            className="w-full bg-[#67594C] hover:bg-[#594C41]"
+          >
+            <Plus className="w-4 h-4 mr-1" /> 그룹 추가하기
+          </Button>
+        </div>
+      </Card>
+
+      {/* 그룹 목록 */}
+      {loading ? (
+        <div className="text-center py-10 text-gray-500">불러오는 중...</div>
+      ) : error ? (
+        <div className="text-center py-10 text-red-500">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {groups.map((g: any) => (
+            <Card
+              key={g.groupId}
+              className="p-5 flex justify-between items-start border border-[#E8E4D9] rounded-xl shadow-sm bg-white"
+            >
+              <div>
+                <CardTitle className="text-[#67594C] text-lg">{g.groupName}</CardTitle>
+                <CardDescription className="text-gray-600">
+                  {g.groupDescription}
+                </CardDescription>
+              </div>
+
+              <Button
+                variant="destructive"
+                onClick={() => deleteGroup(g.groupId)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------
+    Placeholder
+------------------------------ */
+function PlaceholderTab({ value, title }: any) {
   return (
     <TabsContent value={value}>
-      <Card className="bg-white border border-[#E8E4D9] shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-[#67594C]">{title}</CardTitle>
-          <CardDescription>기능이 곧 추가될 예정입니다.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-10 text-gray-500">
-            준비 중입니다.
-          </div>
-        </CardContent>
+      <Card className="p-10 text-center border rounded-xl shadow-sm bg-white">
+        <CardTitle className="text-[#67594C]">{title}</CardTitle>
+        <CardDescription>준비 중입니다.</CardDescription>
       </Card>
     </TabsContent>
   );
