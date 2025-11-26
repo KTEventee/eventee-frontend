@@ -1,6 +1,3 @@
-/* ----------------------------------------------------
-    Admin Dashboard - Fixed Version (COMPLETE)
----------------------------------------------------- */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -157,7 +154,7 @@ export default function AdminDashboard() {
       setNewGroupDesc("");
 
       await loadGroups();
-      await loadAdminEvent();  // 🔥 그룹 수 반영
+      await loadAdminEvent(); 
     } catch {
       alert("그룹 추가 중 오류 발생");
     }
@@ -178,7 +175,7 @@ export default function AdminDashboard() {
       if (!data.isSuccess) return alert("삭제 실패");
 
       await loadGroups();
-      await loadAdminEvent();  // 🔥 그룹 수 반영
+      await loadAdminEvent();  
     } catch {
       alert("삭제 중 오류 발생");
     }
@@ -232,6 +229,7 @@ export default function AdminDashboard() {
           onValueChange={(v) => {
             if (v === "participants") loadParticipants();
             if (v === "groups") loadGroups();
+            if (v === "notice") loadGroups();     // ← 공지 작성 탭에서도 그룹 로딩
           }}
         >
           <TabsList className="border-b border-[#DDD6CE] bg-transparent mb-6">
@@ -270,7 +268,11 @@ export default function AdminDashboard() {
             />
           </TabsContent>
 
-          <PlaceholderTab value="notice" title="공지 작성" />
+          {/* 공지 작성 탭 렌더링 */}
+          <TabsContent value="notice">
+            <NoticeWriteTab groups={groups} event={event} />
+          </TabsContent>
+          
         </Tabs>
       </main>
     </div>
@@ -479,16 +481,164 @@ function GroupManagement({
 }
 
 /* ----------------------------------------------------
-    Placeholder Tab
+    Notice Write Tab (관리자 공지 작성)
 ---------------------------------------------------- */
-function PlaceholderTab({ value, title }: any) {
+function NoticeWriteTab({ groups, event }) {
+  const [postType, setPostType] = useState<"TEXT" | "VOTE">("TEXT");
+  const [content, setContent] = useState("");
+  const [voteTitle, setVoteTitle] = useState("");
+  const [voteOption1, setVoteOption1] = useState("");
+  const [voteOption2, setVoteOption2] = useState("");
+  const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const toggleGroup = (groupNo: number) => {
+    setSelectedGroups((prev) =>
+      prev.includes(groupNo)
+        ? prev.filter((id) => id !== groupNo)
+        : [...prev, groupNo]
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!content.trim()) return alert("내용을 입력하세요.");
+    if (selectedGroups.length === 0) return alert("공지 배포 그룹을 선택하세요.");
+
+    const body = {
+      type: postType,
+      content,
+      voteTitle: postType === "VOTE" ? voteTitle : null,
+      voteContent:
+        postType === "VOTE"
+          ? [voteOption1, voteOption2].filter(Boolean).join("_")
+          : null,
+      groupNums: selectedGroups.join("_"),
+    };
+
+    try {
+      const res = await apiFetch(`${API_URL}/api/v1/post/admin`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!data.isSuccess) return alert("공지 등록 실패");
+
+      alert("공지 등록 완료!");
+      setContent("");
+      setVoteTitle("");
+      setVoteOption1("");
+      setVoteOption2("");
+      setSelectedGroups([]);
+      setPostType("TEXT");
+    } catch (err) {
+      console.error(err);
+      alert("오류 발생");
+    }
+  };
+
   return (
-    <TabsContent value={value}>
-      <Card className="p-10 text-center border rounded-xl shadow-sm bg-white">
-        <CardTitle className="text-[#67594C]">{title}</CardTitle>
-        <CardDescription>준비 중입니다.</CardDescription>
-      </Card>
-    </TabsContent>
+    <Card className="p-6 bg-white rounded-xl border border-[#E8E4D9] shadow-sm">
+      <CardTitle className="text-[#67594C] text-xl mb-4">공지 작성</CardTitle>
+
+      {/* 타입 선택 */}
+      <div className="flex gap-3 mb-4">
+        <button
+          onClick={() => setPostType("TEXT")}
+          className={`px-3 py-2 rounded-lg border ${
+            postType === "TEXT"
+              ? "bg-[#67594C] text-white"
+              : "bg-white text-gray-700 border-gray-300"
+          }`}
+        >
+          일반 공지
+        </button>
+        <button
+          onClick={() => setPostType("VOTE")}
+          className={`px-3 py-2 rounded-lg border ${
+            postType === "VOTE"
+              ? "bg-[#67594C] text-white"
+              : "bg-white text-gray-700 border-gray-300"
+          }`}
+        >
+          투표 공지
+        </button>
+      </div>
+
+      {/* 내용 */}
+      <div className="space-y-2 mb-6">
+        <label className="text-sm text-gray-600">내용</label>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full min-h-[130px] border border-[#DCD7CC] rounded-lg px-3 py-2 bg-[#FAF9F6]"
+        />
+      </div>
+
+      {/* 투표 옵션 */}
+      {postType === "VOTE" && (
+        <div className="space-y-4 mb-6">
+          <div className="space-y-1">
+            <label className="text-sm text-gray-600">투표 질문</label>
+            <input
+              value={voteTitle}
+              onChange={(e) => setVoteTitle(e.target.value)}
+              className="w-full border border-[#DCD7CC] rounded-lg px-3 py-2"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-gray-600">옵션 1</label>
+            <input
+              value={voteOption1}
+              onChange={(e) => setVoteOption1(e.target.value)}
+              className="w-full border border-[#DCD7CC] rounded-lg px-3 py-2"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-gray-600">옵션 2</label>
+            <input
+              value={voteOption2}
+              onChange={(e) => setVoteOption2(e.target.value)}
+              className="w-full border border-[#DCD7CC] rounded-lg px-3 py-2"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 그룹 선택 */}
+      <div className="mb-6">
+        <p className="text-sm text-gray-600 mb-2">공지 배포 그룹 선택</p>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {groups.map((g) => (
+            <button
+              key={g.groupId}
+              onClick={() => toggleGroup(g.groupNo)}
+              className={`border rounded-lg p-3 text-left ${
+                selectedGroups.includes(g.groupNo)
+                  ? "bg-[#67594C] text-white border-[#67594C]"
+                  : "bg-white border-gray-300 text-gray-800"
+              }`}
+            >
+              <p className="text-sm font-medium">{g.groupName}</p>
+              <p className="text-xs text-gray-500">{g.groupDescription}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 등록 */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSubmit}
+          className="bg-[#67594C] hover:bg-[#594C41] text-white px-6"
+        >
+          공지 등록
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -524,7 +674,7 @@ function EditEventModal({ open, onOpenChange, event, reloadEvent }: any) {
 
       alert("수정 완료!");
       onOpenChange(false);
-      await reloadEvent(); // 🔥 최신 데이터 반영
+      await reloadEvent(); 
     } catch {
       alert("수정 중 오류 발생");
     }
