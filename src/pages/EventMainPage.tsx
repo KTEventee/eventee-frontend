@@ -88,6 +88,39 @@ type GroupEditFormState = {
 };
 
 export default function EventMainPage() {
+
+  const requestPresignedUrl = async (file: File, groupId: string) => {
+  const res = await apiFetch(`${API_URL}/api/v1/file/presigned-url`, {
+    method: "POST",
+    body: JSON.stringify({
+      type: "GROUP",
+      refId: Number(groupId),
+      contentType: file.type,
+      contentLength: file.size,
+    }),
+  });
+
+  const data = await res.json();
+  if (!data.isSuccess) throw new Error("presigned URL 발급 실패");
+
+  return {
+    presignedUrl: data.result.presignedUrl,
+    publicUrl: data.result.publicUrl,
+  };
+};
+
+const uploadToS3 = async (presignedUrl: string, file: File) => {
+  const res = await fetch(presignedUrl, {
+    method: "PUT",
+    body: file,
+    headers: {
+      "Content-Type": file.type,
+    },
+  });
+
+  if (!res.ok) throw new Error("S3 업로드 실패");
+};
+
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setCurrentEvent, currentEvent } = useApp();
@@ -144,6 +177,8 @@ export default function EventMainPage() {
     imgUrl: "",
     leader: "",
   });
+  const [groupImageFile, setGroupImageFile] = useState<File | null>(null);
+
 
   const formatDateOnly = (isoString: string) => {
     if (!isoString) return "";
@@ -167,9 +202,7 @@ export default function EventMainPage() {
     return `${format(s)} ~ ${format(e)}`;
   };
 
-  // ==========================
   // 그룹 불러오기
-  // ==========================
   useEffect(() => {
     loadEventGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,48 +313,66 @@ export default function EventMainPage() {
     }));
   };
 
-  const handleSubmitGroupEdit = async () => {
-    if (!groupEditForm.groupId || !groupEditForm.groupName.trim()) return;
+const handleSubmitGroupEdit = async () => {
+  if (!groupEditForm.groupId || !groupEditForm.groupName.trim()) return;
 
+  let finalImageUrl = groupEditForm.imgUrl;
+
+  try {
+    // 1) 이미지 파일이 새로 선택된 경우 → presigned 발급 + S3 업로드
+    if (groupImageFile) {
+      const { presignedUrl, publicUrl } = await requestPresignedUrl(
+        groupImageFile,
+        groupEditForm.groupId
+      );
+
+      await uploadToS3(presignedUrl, groupImageFile);
+
+      finalImageUrl = publicUrl;
+    }
+
+    // 2) 그룹 정보 업데이트 API 호출
     const payload = {
       groupId: Number(groupEditForm.groupId),
       groupName: groupEditForm.groupName.trim(),
       groupDescription: groupEditForm.groupDescription ?? "",
-      imgUrl: groupEditForm.imgUrl ?? "",
-      leader: groupEditForm.leader ?? "",
+      imgUrl: finalImageUrl
     };
 
-    try {
-      const res = await apiFetch(`${API_URL}/api/v1/group`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+    const res = await apiFetch(`${API_URL}/api/v1/group`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
 
-      const data = await res.json();
-      if (!data.isSuccess) return;
-
-      setTeams((prev) =>
-        prev.map((team) =>
-          team.id === groupEditForm.groupId
-            ? {
-                ...team,
-                name: payload.groupName,
-                description: payload.groupDescription,
-                img: payload.imgUrl,
-                leader: payload.leader,
-              }
-            : team
-        )
-      );
-      closeGroupEditDialog();
-    } catch (err) {
-      console.error("그룹 수정 오류:", err);
+    const data = await res.json();
+    if (!data.isSuccess) {
+      alert("그룹 수정 실패");
+      return;
     }
-  };
 
-  // ==========================
-  // Post 변환 함수 (백엔드 여러 버전 안전 대응)
-  // ==========================
+    // 3) UI 업데이트
+    setTeams((prev) =>
+      prev.map((team) =>
+        team.id === groupEditForm.groupId
+          ? {
+              ...team,
+              name: payload.groupName,
+              description: payload.groupDescription,
+              img: payload.imgUrl,
+            }
+          : team
+      )
+    );
+
+    closeGroupEditDialog();
+  } catch (err) {
+    console.error("그룹 수정 오류:", err);
+    alert("그룹 수정 중 오류 발생");
+  }
+};
+
+
+  // Post 변환 함수
   const convertPost = (p: any): Post => {
     // voteOptions / pollOptions 모두 지원
     const rawVoteOptions: any[] = Array.isArray(p.voteOptions)
@@ -407,9 +458,7 @@ export default function EventMainPage() {
     }
   };
 
-  // ==========================
   // 게시글 생성 / 수정
-  // ==========================
   const resetPostForm = () => {
     setNewPostContent("");
     setSelectedTeamId("");
@@ -518,9 +567,7 @@ export default function EventMainPage() {
     }
   };
 
-  // ==========================
   // 댓글 생성
-  // ==========================
   const handleAddComment = async (teamId: string, postId: string) => {
     const commentText = commentInputs[postId];
     if (!commentText?.trim()) return;
@@ -548,9 +595,7 @@ export default function EventMainPage() {
     }
   };
 
-  // ==========================
   // 댓글 삭제
-  // ==========================
   const handleDeleteComment = async (teamId: string, commentId: string) => {
     try {
       const res = await apiFetch(`${API_URL}/api/v1/comment/${commentId}`, {
@@ -566,9 +611,7 @@ export default function EventMainPage() {
     }
   };
 
-  // ==========================
   // 투표
-  // ==========================
   const handleVote = async (teamId: string, postId: string, optionId: string) => {
     const team = teams.find((t) => t.id === teamId);
     const post = team?.posts.find((p) => p.id === postId);
@@ -595,9 +638,7 @@ export default function EventMainPage() {
     }
   };
 
-  // ==========================
   // 게시글 삭제
-  // ==========================
   const handleDeletePost = async (teamId: string, postId: string) => {
     if (!window.confirm("게시글을 삭제하시겠어요?")) return;
     try {
@@ -638,37 +679,36 @@ export default function EventMainPage() {
 
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="bg-white border-b px-8 py-6 flex items-start justify-between sticky top-0 z-10">
-  {/* 왼쪽: 제목 + 설명 */}
-  <div className="flex flex-col">
-    {/* 로고 + 이벤트 타이틀 */}
-    <div className="flex items-center gap-4 mb-1">
-      <h1 className="text-[30px] font-bold leading-none">
-        Event<span style={{ color: "#67594C" }}>ee</span>
-      </h1>
-
+      {/* 왼쪽: 제목 + 설명 */}
       <div className="flex flex-col">
-        <p className="text-[20px] font-bold leading-none text-[#8C7A67]">
+        {/* 로고 + 이벤트 타이틀 */}
+        <div className="flex items-center gap-4 mb-1">
+          <h1 className="text-[30px] font-bold leading-none">
+            Event<span style={{ color: "#67594C" }}>ee</span>
+          </h1>
 
-          {headerTitleText}
-          {eventPeriod && (
-            <span className="ml-2 text-[14px] text-gray-500 font-normal">
-              ({eventPeriod})
-            </span>
-          )}
+          <div className="flex flex-col">
+            <p className="text-[20px] font-bold leading-none text-[#8C7A67]">
+
+              {headerTitleText}
+              {eventPeriod && (
+                <span className="ml-2 text-[14px] text-gray-500 font-normal">
+                  ({eventPeriod})
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+      {headerSubtitleText && (
+        <p className="text-sm text-gray-600 leading-snug max-w-[780px] mt-1">
+          {headerSubtitleText}
         </p>
-      </div>
+      )}
     </div>
-
-    {/* 이벤트 설명 — 간격 줄임 */}
-    {headerSubtitleText && (
-      <p className="text-sm text-gray-600 leading-snug max-w-[780px] mt-1">
-        {headerSubtitleText}
-      </p>
-    )}
-  </div>
 
   {/* 오른쪽: 운영자 버튼 + 프로필 */}
   <div className="flex items-center gap-4">
@@ -784,9 +824,10 @@ export default function EventMainPage() {
     <div
       className="space-y-3 mt-3 overflow-y-auto pr-1 px-2 pb-4"
       style={{
-        maxHeight: "calc(100vh - 220px)",
+        height: "calc(100vh - 380px)", 
       }}
     >
+
       {team.posts.map((post) => {
         const isVotePost =
           post.type === "vote" &&
@@ -1297,21 +1338,40 @@ export default function EventMainPage() {
             </div>
 
             <div>
-              <Label htmlFor="groupImg">이미지 URL</Label>
+              <Label>그룹 이미지</Label>
+
+              {groupEditForm.imgUrl && (
+                <div className="mt-2 w-full h-36 rounded-xl overflow-hidden border">
+                  <img
+                    src={groupEditForm.imgUrl}
+                    alt="그룹 이미지"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               <input
-                id="groupImg"
-                type="text"
-                value={groupEditForm.imgUrl}
-                onChange={(e) =>
-                  handleGroupEditInputChange("imgUrl", e.target.value)
-                }
-                className="w-full mt-2 h-[48px] rounded-[12px] border border-gray-300 px-4 bg-white"
-                placeholder="https://"
+                type="file"
+                accept="image/*"
+                className="mt-2"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setGroupImageFile(file);
+
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setGroupEditForm((prev) => ({
+                        ...prev,
+                        imgUrl: reader.result as string,
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
               />
-              <p className="text-[11px] text-gray-400 mt-1">
-                이미지 업로드 기능 준비 중입니다. URL을 직접 입력해주세요.
-              </p>
             </div>
+
           </div>
 
           <div className="flex justify-end gap-2">
