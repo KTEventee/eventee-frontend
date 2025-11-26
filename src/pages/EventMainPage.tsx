@@ -319,7 +319,7 @@ const handleSubmitGroupEdit = async () => {
   let finalImageUrl = groupEditForm.imgUrl;
 
   try {
-    // 1) 이미지 파일이 새로 선택된 경우 → presigned 발급 + S3 업로드
+    // 1) presigned + S3 업로드
     if (groupImageFile) {
       const { presignedUrl, publicUrl } = await requestPresignedUrl(
         groupImageFile,
@@ -328,15 +328,31 @@ const handleSubmitGroupEdit = async () => {
 
       await uploadToS3(presignedUrl, groupImageFile);
 
-      finalImageUrl = publicUrl;
+      // 2) 업로드 완료 → 백엔드에 확정 요청 (DB 업데이트)
+      const confirmRes = await apiFetch(`${API_URL}/api/v1/file/confirm`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: "GROUP",
+          refId: Number(groupEditForm.groupId),
+          fileUrl: publicUrl,
+        }),
+      });
+
+      const confirmJson = await confirmRes.json();
+      if (!confirmJson.isSuccess) {
+        alert("이미지 업로드 확정 실패");
+        return;
+      }
+
+      finalImageUrl = confirmJson.result; // 백엔드에서 반환한 최종 URL
     }
 
-    // 2) 그룹 정보 업데이트 API 호출
+    // 3) 그룹 정보 업데이트
     const payload = {
       groupId: Number(groupEditForm.groupId),
       groupName: groupEditForm.groupName.trim(),
       groupDescription: groupEditForm.groupDescription ?? "",
-      imgUrl: finalImageUrl
+      imgUrl: finalImageUrl,
     };
 
     const res = await apiFetch(`${API_URL}/api/v1/group`, {
@@ -350,7 +366,7 @@ const handleSubmitGroupEdit = async () => {
       return;
     }
 
-    // 3) UI 업데이트
+    // UI 갱신
     setTeams((prev) =>
       prev.map((team) =>
         team.id === groupEditForm.groupId
