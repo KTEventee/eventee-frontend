@@ -47,91 +47,97 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
     alert("닉네임이 변경되었습니다.");
   };
 
-  // 프로필 이미지 업로드
+    // 프로필 이미지 업로드
   const handleUploadImage = async () => {
     if (!file) return alert("변경할 이미지를 선택해주세요.");
 
     setLoading(true);
 
     try {
-      // Presigned URL 요청
-      const presigned = await apiFetch(
-        `${API_URL}/api/v1/member/profile-image/presigned-url`,
+      /** 1) Presigned URL 발급 */
+      const presignedRes = await apiFetch(
+        `${API_URL}/api/v1/file/presigned-url`,
         {
           method: "POST",
           body: JSON.stringify({
+            type: "PROFILE",
+            refId: user.id,          // ★ 유저 ID 필수
             contentType: file.type,
             contentLength: file.size,
           }),
         }
       );
 
-      const presignedJson = await presigned.json();
-
+      const presignedJson = await presignedRes.json();
       if (!presignedJson.isSuccess) {
         alert("Presigned URL 발급 실패");
         return;
       }
 
-      const { url, key } = presignedJson.result;
+      const { presignedUrl, publicUrl } = presignedJson.result;
 
-      // S3 업로드
-      const uploadResponse = await fetch(url, {
+      /** 2) S3 PUT 업로드 */
+      const uploadRes = await fetch(presignedUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
       });
 
-      if (!uploadResponse.ok) {
+      if (!uploadRes.ok) {
         alert("S3 업로드 실패");
         return;
       }
 
-      // 업로드 확정
-      const confirm = await apiFetch(
-        `${API_URL}/api/v1/member/profile-image/confirm`,
+      /** 3) 업로드 확정 - DB 반영 */
+      const confirmRes = await apiFetch(
+        `${API_URL}/api/v1/file/confirm`,
         {
           method: "POST",
           body: JSON.stringify({
-            key,
-            contentType: file.type,
-            size: file.size,
+            type: "PROFILE",
+            refId: user.id,
+            fileUrl: publicUrl,
           }),
         }
       );
 
-      const confirmJson = await confirm.json();
-
+      const confirmJson = await confirmRes.json();
       if (!confirmJson.isSuccess) {
-        alert("프로필 반영에 실패했습니다.");
+        alert("이미지 반영 실패");
         return;
       }
 
+      // 4) 전역 유저 상태 업데이트
       setUser(prev => ({
         ...(prev || {}),
-        profileImageUrl: confirmJson.result,
+        profileImageUrl: publicUrl,
       }));
 
       alert("프로필 이미지가 변경되었습니다.");
       setFile(null);
 
     } catch (err) {
-      console.error("예외 발생:", err);
+      console.error("프로필 이미지 업로드 중 오류:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 프로필 이미지 삭제
+    // 프로필 이미지 삭제
+    // 프로필 이미지 삭제
   const handleDeleteImage = async () => {
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/member/profile-image`, {
+      const res = await apiFetch(`${API_URL}/api/v1/file`, {
         method: "DELETE",
+        body: JSON.stringify({
+          type: "PROFILE",
+          refId: user.id,
+        }),
       });
 
       const json = await res.json();
       if (!json.isSuccess) {
-        alert(json.message ?? "프로필 이미지 삭제 실패");
+        alert(json.message ?? "이미지 삭제 실패");
         return;
       }
 
