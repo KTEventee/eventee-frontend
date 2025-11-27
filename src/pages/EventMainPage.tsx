@@ -254,6 +254,11 @@ const uploadToS3 = async (presignedUrl: string, file: File) => {
         nickname,
       });
 
+      if (nickname) {
+        localStorage.setItem("eventNickname", nickname);
+      }
+
+
       const convertedTeams: Team[] = (groups ?? []).map((g: any) => ({
         id: String(g.groupId),
         name: g.groupName,
@@ -267,6 +272,8 @@ const uploadToS3 = async (presignedUrl: string, file: File) => {
         img: g.groupImg,
       }));
 
+      convertedTeams.sort((a, b) => Number(a.groupNo) - Number(b.groupNo));
+
       setTeams(convertedTeams);
 
       const teamsWithPosts = await Promise.all(
@@ -275,6 +282,8 @@ const uploadToS3 = async (presignedUrl: string, file: File) => {
           return { ...team, posts };
         })
       );
+
+      teamsWithPosts.sort((a, b) => Number(a.groupNo) - Number(b.groupNo));
 
       setTeams(teamsWithPosts);
     } catch (err) {
@@ -439,43 +448,41 @@ const handleSubmitGroupEdit = async () => {
   };
 
   const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
-    try {
-      const res = await apiFetch(
-        `${API_URL}/api/v1/events/${eventId}/groups/${groupId}/posts`,
-        {
-          method: "GET",
-        }
-      );
-
-      const data = await res.json();
-
-      console.log("posts raw data:", data.result);
-
-      if (!data.isSuccess) return [];
-
-      let rawPosts: any[] = [];
-
-      // CASE 1: { posts: [...] }
-      if (Array.isArray(data.result?.posts)) {
-        rawPosts = data.result.posts;
+  try {
+    const res = await apiFetch(
+      `${API_URL}/api/v1/events/${eventId}/groups/${groupId}/posts`,
+      {
+        method: "GET",
       }
-      // CASE 2: result 자체가 배열
-      else if (Array.isArray(data.result)) {
-        rawPosts = data.result;
-      }
-      // CASE 3: 단일 객체
-      else if (data.result?.postId) {
-        rawPosts = [data.result];
-      }
+    );
 
-      console.log("rawPosts:", rawPosts);
+    const data = await res.json();
+    if (!data.isSuccess) return [];
 
-      return rawPosts.map((post: any) => convertPost(post));
-    } catch (err) {
-      console.error("그룹 게시글 API 오류:", err);
-      return [];
+    let rawPosts: any[] = [];
+
+    if (Array.isArray(data.result?.posts)) {
+      rawPosts = data.result.posts;
+    } else if (Array.isArray(data.result)) {
+      rawPosts = data.result;
+    } else if (data.result?.postId) {
+      rawPosts = [data.result];
     }
-  };
+
+    return rawPosts
+      .map((post: any) => convertPost(post))
+      .sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return da - db;
+      });
+
+  } catch (err) {
+    console.error("그룹 게시글 API 오류:", err);
+    return [];
+  }
+};
+
 
   // 게시글 생성 / 수정
   const resetPostForm = () => {
@@ -693,7 +700,14 @@ const handleSubmitGroupEdit = async () => {
   const isEventHost =
     (eventInfo?.role ?? user?.role)?.toUpperCase() === "HOST";
 
-  const displayNickname = location.state?.nickname ?? eventInfo?.nickname ?? "닉네임";
+  const cachedNickname = localStorage.getItem("eventNickname");
+
+  const displayNickname =
+      cachedNickname ??
+      eventInfo?.nickname ??
+      location.state?.nickname ??
+      "닉네임";
+
 
 
 useEffect(() => {
@@ -711,10 +725,13 @@ useEffect(() => {
         return {
           ...g,
           groupId: String(g.groupId),
+          groupNo: Number(g.groupNo ?? g.groupNum ?? g.groupId), 
           posts,
         };
       })
     );
+
+    newTeamsWithPosts.sort((a, b) => Number(a.groupNo) - Number(b.groupNo));
 
     setTeams((prev) => {
       let changed = false;
@@ -723,9 +740,8 @@ useEffect(() => {
         const newTeam = newTeamsWithPosts.find(
           (t) => String(t.groupId) === String(oldTeam.id)
         );
-        if (!newTeam) return oldTeam; // 혹시 없는 경우 그대로
+        if (!newTeam) return oldTeam;
 
-        // 변경 여부 체크
         const oldPosts = JSON.stringify(oldTeam.posts);
         const newPosts = JSON.stringify(newTeam.posts);
 
@@ -734,27 +750,20 @@ useEffect(() => {
           return {
             ...oldTeam,
             posts: newTeam.posts,
-            // 필요한 경우 description, img, leader도 업데이트 가능
           };
         }
 
         return oldTeam;
       });
 
-      if (changed) {
-        console.log("변경 감지 → 업데이트 실행");
-        return updated;
-      }
+      updated.sort((a, b) => Number(a.groupNo) - Number(b.groupNo));
 
-      console.log("변화 없음 → UI 재렌더 생략");
-      return prev;
+      return changed ? updated : prev;
     });
   }, 10000);
 
   return () => clearInterval(interval);
 }, [eventId]);
-
-
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
