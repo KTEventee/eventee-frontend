@@ -65,14 +65,24 @@ export default function JoinEventPage() {
   return (
     <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center px-4 relative">
 
-      {/* 로고 */}
-      <div className="absolute left-10 top-10">
-        <h1 className="text-[30px] font-bold tracking-tight">
-          Even<span className="text-[#67594C]">Tee</span>
-        </h1>
-      </div>
+      {/* ===== 공통 헤더 (로그인 / 패스워드 / 닉네임 입력과 동일) ===== */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]">
+        <div className="max-w-5xl mx-auto flex items-center px-4 py-3">
+          <div className="flex items-center gap-2">
+            <img
+              src="/ticket.png"
+              alt="Eventee Logo"
+              className="w-8 h-8 rounded-xl shadow-sm"
+            />
+            <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
+              Eventee
+            </span>
+          </div>
+        </div>
+      </header>
+      {/* ========================================================== */}
 
-      <div className="w-full max-w-md pt-16">
+      <div className="w-full max-w-md pt-28">
 
         {/* 타이틀 */}
         <div className="text-center mb-12">
@@ -104,6 +114,7 @@ export default function JoinEventPage() {
                 className="mt-2 uppercase h-[56px] text-center text-[20px] tracking-[0.2em]"
                 maxLength={6}
               />
+
               {error && (
                 <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
