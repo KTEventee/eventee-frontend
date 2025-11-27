@@ -95,39 +95,27 @@ export default function CreateEventPageNew() {
   <div className="bg-[#FAF9F6] min-h-screen relative">
 
 {/* ===== 공통 헤더 (JoinEventPage와 동일) ===== */}
-<header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]">
-  <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
-
-    {/* 로고 */}
+<header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]/50">
+  <div className="w-full max-w-[850px] mx-auto flex items-center justify-between px-4 py-3">
     <div className="flex items-center gap-2">
-      <img
-        src="/ticket.png"
-        alt="Eventee Logo"
-        className="w-8 h-8 rounded-xl shadow-sm"
-      />
-      <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
-        Eventee
-      </span>
+      <img src="/ticket.png" className="w-8 h-8 rounded-xl shadow-sm" />
+      <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">Eventee</span>
     </div>
 
-    {/* 뒤로가기 버튼 */}
     <button
       onClick={() => navigate("/my-page")}
       className="p-2 hover:bg-black/5 rounded-full transition-colors"
-      type="button"
     >
       <ArrowLeft className="w-5 h-5 text-[#5A4A3B]" />
     </button>
-
   </div>
 </header>
-{/* ========================================== */}
 
-
-    {/* 제목 */}
-    <h1 className="text-[34px] text-center font-semibold text-[#67594C] mt-28 mb-16 tracking-tight">
-            이벤트 생성
-    </h1>
+<div className="w-full bg-[#F8F7F3] pt-28 pb-14 mt-[60px] border-b border-[#E6E0D8]/10">
+  <h1 className="text-[34px] text-center font-semibold text-[#67594C] tracking-tight">
+    이벤트 생성
+  </h1>
+</div>
 
     {/* 메인 콘텐츠 */}
     <div className="max-w-[850px] mx-auto pb-24 px-6">

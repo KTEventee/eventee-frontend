@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import EventeeButton from "../components/EventeeButton";
 import { Copy, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+
 
 export default function InviteCodePage() {
   const navigate = useNavigate();
@@ -52,22 +54,37 @@ https://www.eventee.cloud/join?code=${inviteCode}`;
     }
   };
 
-  return (
-    <div className="bg-[#FAF9F6] min-h-screen relative">
+return (
+  <div className="bg-[#FAF9F6] min-h-screen relative">
 
-      {/* 로고 */}
-      <div className="absolute left-10 top-10">
-        <h1 className="text-[30px] font-bold tracking-tight">
-          Even<span className="text-[#67594C]">Tee</span>
-        </h1>
+    {/* ===== 공통 헤더 ===== */}
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]">
+      <div className="w-full max-w-[850px] mx-auto flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <img src="/ticket.png" className="w-8 h-8 rounded-xl shadow-sm" />
+          <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
+            Eventee
+          </span>
+        </div>
+
+        <button
+          onClick={() => navigate("/my-page")}
+          className="p-2 hover:bg-black/5 rounded-full transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-[#5A4A3B]" />
+        </button>
       </div>
+    </header>
 
-      {/* 메인 컨테이너 */}
-      <div className="max-w-4xl mx-auto pt-40 pb-24 px-6">
+    {/* 제목 영역 */}
+    <div className="w-full bg-[#F8F7F3] pt-28 pb-14 mt-[60px] border-b border-[#E6E0D8]/40">
+      <h1 className="text-[34px] text-center font-semibold text-[#67594C] tracking-tight">
+        초대 코드 생성 완료
+      </h1>
+    </div>
 
-        <h1 className="text-[34px] text-center font-semibold text-[#67594C] mb-16 tracking-tight">
-          초대 코드 생성 완료
-        </h1>
+    {/* 메인 영역 */}
+    <div className="max-w-4xl mx-auto pb-24 px-6 mt-10">
 
         <div className="space-y-10">
           
