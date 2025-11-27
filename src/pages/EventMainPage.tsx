@@ -25,7 +25,7 @@ type Comment = {
   author: string;
   content: string;
   timestamp: string;
-  imageUrl?: string;
+  writerProfileUrl?: string;
   isWrite: boolean;
 };
 
@@ -40,6 +40,7 @@ type PollOption = {
 type Post = {
   id: string;
   author: string;
+  writerProfileUrl: string;
   content: string;
   imageUrl?: string;
   likes: number;
@@ -417,6 +418,7 @@ const handleSubmitGroupEdit = async () => {
     return {
       id: String(p.postId),
       author: p.writerNickname ?? p.author ?? "익명",
+      writerProfileUrl: p.writerProfileUrl,
       content: p.content,
       type: isVote ? "vote" : "text",
       pollQuestion: p.voteTitle ?? p.pollQuestion ?? "",
@@ -424,7 +426,8 @@ const handleSubmitGroupEdit = async () => {
       createdAt: p.createdAt,
       comments: (p.comments ?? []).map((c: any) => ({
         id: String(c.commentId ?? c.id),
-        author: c.writerNickname ?? c.writerName ?? c.author ?? "익명",
+        author: c.writerNickname ?? "익명",
+        writerProfileUrl: c.writerProfileUrl,
         content: c.content,
         timestamp: c.createdAt,
         isWrite: Boolean(c.isMine ?? c.isWrite),
@@ -693,6 +696,65 @@ const handleSubmitGroupEdit = async () => {
   const displayNickname = location.state?.nickname ?? eventInfo?.nickname ?? "닉네임";
 
 
+useEffect(() => {
+  const interval = setInterval(async () => {
+
+    const res = await apiFetch(`${API_URL}/api/v1/events/${eventId}/groups`);
+    const data = await res.json();
+    if (!data.isSuccess) return;
+
+    const newTeamsRaw = data.result.groups || [];
+    
+    const newTeamsWithPosts = await Promise.all(
+      newTeamsRaw.map(async (g: any) => {
+        const posts = await fetchGroupPosts(String(g.groupId));
+        return {
+          ...g,
+          groupId: String(g.groupId),
+          posts,
+        };
+      })
+    );
+
+    setTeams((prev) => {
+      let changed = false;
+
+      const updated = prev.map((oldTeam) => {
+        const newTeam = newTeamsWithPosts.find(
+          (t) => String(t.groupId) === String(oldTeam.id)
+        );
+        if (!newTeam) return oldTeam; // 혹시 없는 경우 그대로
+
+        // 변경 여부 체크
+        const oldPosts = JSON.stringify(oldTeam.posts);
+        const newPosts = JSON.stringify(newTeam.posts);
+
+        if (oldPosts !== newPosts) {
+          changed = true;
+          return {
+            ...oldTeam,
+            posts: newTeam.posts,
+            // 필요한 경우 description, img, leader도 업데이트 가능
+          };
+        }
+
+        return oldTeam;
+      });
+
+      if (changed) {
+        console.log("변경 감지 → 업데이트 실행");
+        return updated;
+      }
+
+      console.log("변화 없음 → UI 재렌더 생략");
+      return prev;
+    });
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, [eventId]);
+
+
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -858,7 +920,15 @@ const handleSubmitGroupEdit = async () => {
             {/* 게시글 헤더 */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gray-300" />
+                {post.writerProfileUrl ? (
+              <img
+                src={post.writerProfileUrl}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gray-300" />
+            )}
+
                 <span className="text-xs text-gray-600">
                   {post.author}
                 </span>
@@ -974,7 +1044,15 @@ const handleSubmitGroupEdit = async () => {
                                     key={comment.id}
                                     className="flex gap-2"
                                   >
-                                    <div className="w-5 h-5 rounded-full bg-gray-200" />
+                                    {comment.writerProfileUrl ? (
+                                      <img
+                                        src={comment.writerProfileUrl}
+                                        className="w-5 h-5 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full bg-gray-200" />
+                                    )}
+
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-2">
