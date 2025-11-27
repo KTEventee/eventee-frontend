@@ -416,7 +416,7 @@ const handleSubmitGroupEdit = async () => {
 
     return {
       id: String(p.postId),
-      author: p.writerName ?? p.author ?? "익명",
+      author: p.writerNickname ?? p.author ?? "익명",
       content: p.content,
       type: isVote ? "vote" : "text",
       pollQuestion: p.voteTitle ?? p.pollQuestion ?? "",
