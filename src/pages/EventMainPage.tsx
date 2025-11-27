@@ -767,35 +767,43 @@ useEffect(() => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* 헤더 */}
-      <div className="bg-white border-b px-8 py-6 flex items-start justify-between sticky top-0 z-10">
-      {/* 왼쪽: 제목 + 설명 */}
-      <div className="flex flex-col">
-        {/* 로고 + 이벤트 타이틀 */}
-        <div className="flex items-center gap-4 mb-1">
-          <h1 className="text-[30px] font-bold leading-none">
-            Event<span style={{ color: "#67594C" }}>ee</span>
-          </h1>
+{/* 헤더 */}
+<div className="bg-white/70 backdrop-blur-md border-b border-[#E6E0D8] px-8 py-4 flex items-center justify-between sticky top-0 z-20">
 
-          <div className="flex flex-col">
-            <p className="text-[20px] font-bold leading-none text-[#8C7A67]">
+  {/* 왼쪽: 로고 + 이벤트 제목 */}
+  <div className="flex items-center gap-4">
 
-              {headerTitleText}
-              {eventPeriod && (
-                <span className="ml-2 text-[14px] text-gray-500 font-normal">
-                  ({eventPeriod})
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
+    {/* 공통 로고 */}
+    <div className="flex items-center gap-2">
+      <img
+        src="/ticket.png"
+        alt="Eventee Logo"
+        className="w-8 h-8 rounded-xl shadow-sm"
+      />
+      <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
+        Eventee
+      </span>
+    </div>
+
+    {/* 이벤트 타이틀 + 기간 */}
+    <div className="flex flex-col ml-4">
+      <p className="text-[20px] font-bold text-[#8C7A67] leading-none">
+        {headerTitleText}
+        {eventPeriod && (
+          <span className="ml-2 text-[14px] text-gray-500 font-normal">
+            ({eventPeriod})
+          </span>
+        )}
+      </p>
 
       {headerSubtitleText && (
-        <p className="text-sm text-gray-600 leading-snug max-w-[780px] mt-1">
+        <p className="text-xs text-gray-600 leading-snug">
           {headerSubtitleText}
         </p>
       )}
     </div>
+  </div>
+
 
   {/* 오른쪽: 운영자 버튼 + 프로필 */}
   <div className="flex items-center gap-4">

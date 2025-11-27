@@ -59,12 +59,23 @@ export default function MyPage() {
       <div className="min-h-screen px-4 py-6 relative bg-[#FAF9F6]">
         <div className="max-w-5xl mx-auto">
 
-          {/* 헤더 */}
-          <div className="flex items-center justify-between mb-10">
-            <h1 className="text-4xl font-extrabold tracking-tight">
-              Even<span className="text-[#67594C]">Tee</span>
-            </h1>
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-10">
+
+          {/* 로그인 페이지 동일 로고 디자인 */}
+          <div className="flex items-center gap-2">
+            <img
+              src="/ticket.png"
+              alt="Eventee Logo"
+              className="w-8 h-8 rounded-xl shadow-sm"
+            />
+            <span className="text-[22px] font-bold tracking-tight text-[#5A4A3B]">
+              Eventee
+            </span>
           </div>
+
+        </div>
+
 
           {/* 프로필 카드 */}
           <div className="bg-white rounded-3xl shadow-md p-10 mb-12 border border-gray-100">

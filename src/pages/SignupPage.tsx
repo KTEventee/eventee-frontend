@@ -6,19 +6,16 @@ import EventeeButton from "../components/EventeeButton";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { apiFetch } from "../utils/apiFetch"; 
+
 export default function SignupPage() {
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // EventPasswordPage에서 넘어온 값들
   const password = location.state?.password;
   const passedInviteCode = location.state?.eventCode;
 
-  // Context에서 관리되는 값
   const { inviteCode: ctxInviteCode, setCurrentEvent } = useApp();
-
-  // 최종 inviteCode: state > context > null
   const inviteCode = passedInviteCode || ctxInviteCode || null;
 
   const [nickname, setNickname] = useState("");
@@ -26,7 +23,6 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
-
   const nextPage = "/event-main";
 
   const validateNickname = (value: string): string | null => {
@@ -56,7 +52,6 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      // ★ fetch → apiFetch로 변경
       const response = await apiFetch(`${API_URL}/api/v1/events/join`, {
         method: "POST",
         headers: {
@@ -77,7 +72,6 @@ export default function SignupPage() {
         return;
       }
 
-      // currentEvent 타입과 맞도록 저장
       setCurrentEvent({
         id: data.result.eventId,
         title: data.result.title,
@@ -88,7 +82,6 @@ export default function SignupPage() {
         createdBy: data.result.role ?? "PARTICIPANT",
       });
 
-      // ★ 다음 페이지로 이동
       navigate(nextPage, {
         state: {
           eventId: data.result.eventId,
@@ -106,20 +99,35 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative">
-      <div className="absolute left-12 top-8">
-        <p className="text-[30px] font-bold">
-          Even<span className="text-[#67594c]">Tee</span>
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-4 relative bg-[#FAF9F6]">
 
-      <div className="w-full max-w-md">
+      {/* HEADER (LoginPage와 동일) */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]">
+        <div className="max-w-5xl mx-auto flex items-center px-4 py-3">
+          <div className="flex items-center gap-2">
+            <img
+              src="/ticket.png"
+              alt="Eventee Logo"
+              className="w-8 h-8 rounded-xl shadow-sm"
+            />
+            <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
+              Eventee
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="w-full max-w-md pt-28">
+
+        {/* 제목 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl mb-2">닉네임 입력</h1>
+          <h1 className="text-3xl font-semibold text-[#67594C]">닉네임 입력</h1>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
+        {/* 카드 */}
+        <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
+
             <div>
               <Label htmlFor="nickname">닉네임</Label>
               <Input
@@ -135,19 +143,27 @@ export default function SignupPage() {
                 maxLength={5}
                 disabled={isSubmitting}
               />
+
               {error && (
                 <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
+
               <p className="text-gray-500 text-xs mt-2">
                 2~5자, 한글/영문/숫자만 사용 가능
               </p>
             </div>
 
-            <EventeeButton type="submit" className="w-full" disabled={isSubmitting}>
+            <EventeeButton 
+              type="submit" 
+              className="w-full h-[56px]" 
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "참여 중..." : "입장하기"}
             </EventeeButton>
+
           </form>
         </div>
+
       </div>
     </div>
   );

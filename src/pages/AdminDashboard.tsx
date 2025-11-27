@@ -186,41 +186,54 @@ export default function AdminDashboard() {
   ------------------------------- */
   return (
     <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
-      {/* HEADER */}
-      <header className="bg-[#E8E4D9] border-b border-[#D5D0C4] sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-xl font-semibold text-[#67594C]">
-              EvenTee <span className="text-sm text-[#FFAB5D]">관리자</span>
-            </h1>
+<header className="bg-white/80 backdrop-blur-md border-b border-[#E6E0D8] sticky top-0 z-10 shadow-sm">
+  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
-            <h2 className="text-2xl font-bold text-[#67594C] leading-tight">
-              {event.title}
-            </h2>
+    {/* 왼쪽: 로고 + 관리자 타이틀 */}
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <img
+          src="/ticket.png"
+          alt="Eventee Logo"
+          className="w-8 h-8 rounded-xl shadow-sm"
+        />
+        <span className="font-semibold text-[14px] tracking-tight text-[#5A4A3B]">
+          Eventee 관리자
+        </span>
+      </div>
 
-            <p className="text-sm text-gray-600">
-              {format(event.startDate, "yyyy.MM.dd")} ~{" "}
-              {format(event.endDate, "yyyy.MM.dd")}
-            </p>
-          </div>
+      {/* 이벤트 정보 */}
+      <div className="flex flex-col ml-4">
+        <h2 className="text-[20px] font-bold text-[#67594C] leading-none">
+          {event.title}
+        </h2>
+        <p className="text-xs text-gray-600 leading-snug">
+          {format(event.startDate, "yyyy.MM.dd")} ~ {format(event.endDate, "yyyy.MM.dd")}
+        </p>
+      </div>
+    </div>
 
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate("/event-main", {
-                state: {
-                  eventId: event.id,
-                  eventTitle: event.title,
-                  eventCode: event.inviteCode,
-                  nickname: user.nickname,
-                },
-              })
-            }
-          >
-            이벤트 화면으로 돌아가기
-          </Button>
-        </div>
-      </header>
+    {/* 오른쪽: 돌아가기 버튼 */}
+    <Button
+      variant="outline"
+      onClick={() =>
+        navigate("/event-main", {
+          state: {
+            eventId: event.id,
+            eventTitle: event.title,
+            eventCode: event.inviteCode,
+            nickname: user.nickname,
+          },
+        })
+      }
+      className="border-[#D5D0C4] text-[#67594C] hover:bg-[#F3EFE9]"
+    >
+      이벤트 화면으로 돌아가기
+    </Button>
+
+  </div>
+</header>
+
 
       {/* MAIN */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
