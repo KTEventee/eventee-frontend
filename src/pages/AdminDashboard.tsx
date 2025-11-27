@@ -480,9 +480,6 @@ function GroupManagement({
   );
 }
 
-/* ----------------------------------------------------
-    Notice Write Tab (관리자 공지 작성)
----------------------------------------------------- */
 function NoticeWriteTab({ groups, event }) {
   const [postType, setPostType] = useState<"TEXT" | "VOTE">("TEXT");
   const [content, setContent] = useState("");
@@ -492,14 +489,20 @@ function NoticeWriteTab({ groups, event }) {
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const toggleGroup = (groupNo: number) => {
+  /* -----------------------------------
+        그룹 선택 토글 (groupId 기반)
+  ----------------------------------- */
+  const toggleGroup = (groupId: number) => {
     setSelectedGroups((prev) =>
-      prev.includes(groupNo)
-        ? prev.filter((id) => id !== groupNo)
-        : [...prev, groupNo]
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
     );
   };
 
+  /* -----------------------------------
+        공지 등록
+  ----------------------------------- */
   const handleSubmit = async () => {
     if (!content.trim()) return alert("내용을 입력하세요.");
     if (selectedGroups.length === 0) return alert("공지 배포 그룹을 선택하세요.");
@@ -512,6 +515,8 @@ function NoticeWriteTab({ groups, event }) {
         postType === "VOTE"
           ? [voteOption1, voteOption2].filter(Boolean).join("_")
           : null,
+
+      // ⭐ groupId 기준으로 전달
       groupNums: selectedGroups.join("_"),
     };
 
@@ -525,6 +530,8 @@ function NoticeWriteTab({ groups, event }) {
       if (!data.isSuccess) return alert("공지 등록 실패");
 
       alert("공지 등록 완료!");
+
+      // reset
       setContent("");
       setVoteTitle("");
       setVoteOption1("");
@@ -537,6 +544,9 @@ function NoticeWriteTab({ groups, event }) {
     }
   };
 
+  /* -----------------------------------
+        JSX
+  ----------------------------------- */
   return (
     <Card className="p-6 bg-white rounded-xl border border-[#E8E4D9] shadow-sm">
       <CardTitle className="text-[#67594C] text-xl mb-4">공지 작성</CardTitle>
@@ -615,9 +625,9 @@ function NoticeWriteTab({ groups, event }) {
           {groups.map((g) => (
             <button
               key={g.groupId}
-              onClick={() => toggleGroup(g.groupNo)}
+              onClick={() => toggleGroup(g.groupId)}   // ⭐ groupId 사용
               className={`border rounded-lg p-3 text-left ${
-                selectedGroups.includes(g.groupNo)
+                selectedGroups.includes(g.groupId)        // ⭐ groupId 기반 선택
                   ? "bg-[#67594C] text-white border-[#67594C]"
                   : "bg-white border-gray-300 text-gray-800"
               }`}
@@ -629,7 +639,7 @@ function NoticeWriteTab({ groups, event }) {
         </div>
       </div>
 
-      {/* 등록 */}
+      {/* 등록 버튼 */}
       <div className="flex justify-end">
         <Button
           onClick={handleSubmit}
@@ -641,6 +651,7 @@ function NoticeWriteTab({ groups, event }) {
     </Card>
   );
 }
+
 
 /* ----------------------------------------------------
     Edit Event Modal
