@@ -94,27 +94,39 @@ export default function CreateEventPageNew() {
   return (
   <div className="bg-[#FAF9F6] min-h-screen relative">
 
+{/* ===== 공통 헤더 (JoinEventPage와 동일) ===== */}
+<header className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#E6E0D8]">
+  <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+
     {/* 로고 */}
-    <div className="absolute left-10 top-10">
-      <h1 className="text-[30px] font-bold tracking-tight">
-        Even<span className="text-[#67594C]">Tee</span>
-      </h1>
+    <div className="flex items-center gap-2">
+      <img
+        src="/ticket.png"
+        alt="Eventee Logo"
+        className="w-8 h-8 rounded-xl shadow-sm"
+      />
+      <span className="font-semibold text-sm tracking-tight text-[#5A4A3B]">
+        Eventee
+      </span>
     </div>
 
     {/* 뒤로가기 버튼 */}
-    <div className="absolute right-10 top-10">
-      <button
-        onClick={() => navigate("/my-page")}
-        className="p-2 hover:bg-black/5 rounded-lg transition-colors"
-        type="button"
-      >
-        <ArrowLeft className="w-6 h-6" style={{ color: "#67594C" }} />
-      </button>
-    </div>
+    <button
+      onClick={() => navigate("/my-page")}
+      className="p-2 hover:bg-black/5 rounded-full transition-colors"
+      type="button"
+    >
+      <ArrowLeft className="w-5 h-5 text-[#5A4A3B]" />
+    </button>
+
+  </div>
+</header>
+{/* ========================================== */}
+
 
     {/* 제목 */}
-    <h1 className="text-[34px] text-center font-semibold text-[#67594C] mt-40 mb-16 tracking-tight">
-      이벤트 생성
+    <h1 className="text-[34px] text-center font-semibold text-[#67594C] mt-28 mb-16 tracking-tight">
+            이벤트 생성
     </h1>
 
     {/* 메인 콘텐츠 */}
