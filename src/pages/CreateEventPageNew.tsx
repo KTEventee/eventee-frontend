@@ -92,31 +92,25 @@ export default function CreateEventPageNew() {
   };
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen relative">
-      {/* 로고 */}
-      <div className="absolute left-10 top-10">
-        <p className="text-[30px] font-bold tracking-tight">
-          Even<span className="text-[#67594C]">Tee</span>
-        </p>
-      </div>
+    <div className="bg-[#FAF9F6] min-h-screen px-4 py-8">
 
-      {/* 뒤로가기 */}
-      <div className="absolute right-10 top-10">
+      {/* 🔥 변경된 헤더 */}
+      <div className="max-w-[850px] mx-auto flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate("/my-page")}
-          className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+          className="p-2 rounded-full hover:bg-black/5 transition-colors"
           type="button"
         >
-          <ArrowLeft className="w-6 h-6" style={{ color: "#67594C" }} />
+          <ArrowLeft className="w-6 h-6 text-[#67594C]" />
         </button>
+
+        <h1 className="text-3xl font-semibold text-[#67594C] tracking-tight">
+          이벤트 생성
+        </h1>
       </div>
 
       {/* 메인 콘텐츠 */}
-      <div className="flex flex-col items-center justify-center pt-32 pb-16 px-4">
-        <h1 className="text-[32px] font-semibold text-[#67594C] mb-12 tracking-tight">
-          이벤트 생성
-        </h1>
-
+      <div className="flex flex-col items-center justify-center pt-4 pb-16 px-4">
         <form onSubmit={handleSubmit} className="w-full max-w-[850px]">
           <div className="bg-white p-10 rounded-3xl shadow-md border border-gray-100 space-y-8">
 
@@ -149,7 +143,10 @@ export default function CreateEventPageNew() {
                   시작 날짜 <span className="text-red-500">*</span>
                 </label>
 
-                <Popover open={showStartCalendar} onOpenChange={setShowStartCalendar}>
+                <Popover
+                  open={showStartCalendar}
+                  onOpenChange={setShowStartCalendar}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -188,7 +185,10 @@ export default function CreateEventPageNew() {
                   종료 날짜 <span className="text-red-500">*</span>
                 </label>
 
-                <Popover open={showEndCalendar} onOpenChange={setShowEndCalendar}>
+                <Popover
+                  open={showEndCalendar}
+                  onOpenChange={setShowEndCalendar}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"
