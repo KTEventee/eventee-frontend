@@ -92,27 +92,37 @@ export default function CreateEventPageNew() {
   };
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen px-4 py-8">
+  <div className="bg-[#FAF9F6] min-h-screen relative">
 
-      {/* 🔥 변경된 헤더 */}
-      <div className="max-w-[850px] mx-auto flex items-center gap-4 mb-8">
-        <button
-          onClick={() => navigate("/my-page")}
-          className="p-2 rounded-full hover:bg-black/5 transition-colors"
-          type="button"
-        >
-          <ArrowLeft className="w-6 h-6 text-[#67594C]" />
-        </button>
+    {/* 로고 */}
+    <div className="absolute left-10 top-10">
+      <h1 className="text-[30px] font-bold tracking-tight">
+        Even<span className="text-[#67594C]">Tee</span>
+      </h1>
+    </div>
 
-        <h1 className="text-3xl font-semibold text-[#67594C] tracking-tight">
-          이벤트 생성
-        </h1>
-      </div>
+    {/* 뒤로가기 버튼 */}
+    <div className="absolute right-10 top-10">
+      <button
+        onClick={() => navigate("/my-page")}
+        className="p-2 hover:bg-black/5 rounded-lg transition-colors"
+        type="button"
+      >
+        <ArrowLeft className="w-6 h-6" style={{ color: "#67594C" }} />
+      </button>
+    </div>
 
-      {/* 메인 콘텐츠 */}
-      <div className="flex flex-col items-center justify-center pt-4 pb-16 px-4">
-        <form onSubmit={handleSubmit} className="w-full max-w-[850px]">
-          <div className="bg-white p-10 rounded-3xl shadow-md border border-gray-100 space-y-8">
+    {/* 제목 */}
+    <h1 className="text-[34px] text-center font-semibold text-[#67594C] mt-40 mb-16 tracking-tight">
+      이벤트 생성
+    </h1>
+
+    {/* 메인 콘텐츠 */}
+    <div className="max-w-[850px] mx-auto pb-24 px-6">
+      <form onSubmit={handleSubmit}>
+        <div className="bg-white p-10 rounded-3xl shadow-md border border-gray-100 space-y-8">
+          
+          {/* 기존 내용은 그대로 */}
 
             {/* 제목 / 날짜 */}
             <div className="flex gap-4">
