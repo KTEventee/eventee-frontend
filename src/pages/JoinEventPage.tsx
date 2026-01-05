@@ -33,7 +33,7 @@ export default function JoinEventPage() {
 
     try {
       const response = await apiFetch(
-        `${API_URL}/api/v1/event/vents/validate?code=${code}`,
+        `${API_URL}/api/v1/event/events/validate?code=${code}`,
         { method: "GET" }
       );
 
