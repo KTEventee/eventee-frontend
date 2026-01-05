@@ -15,9 +15,9 @@ type JoinedEvent = {
   endAt: string;
   participantsCount: number;
   participantProfileImages: string[];
-  date: string;
   role: string;
 };
+
 
 export default function MyPage() {
   const navigate = useNavigate();
@@ -28,20 +28,34 @@ export default function MyPage() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    apiFetch(`${API_URL}/api/v1/member/mypage`, { method: "GET" })
+    apiFetch(`${API_URL}/api/v1/member/members/mypage`, { method: "GET" })
       .then((res) => res.json())
       .then((json) => {
         if (!json.isSuccess) return;
+        setUser((prev) => {
+          if (!prev) return prev;
 
-        setUser((prev) => ({
-          ...(prev || {}),
-          nickname: json.result.nickname,
-          profileImageUrl: json.result.profileImageUrl,
-        }));
+          return {
+            ...prev,
+            nickname: json.result.nickname,
+            profileImageUrl: json.result.profileImageUrl,
+          };
+        });
 
-        setJoinedEvents(json.result.joinedEvents || []);
       });
   }, [API_URL, setUser]);
+
+  // 현재는 이벤트 조회 API가 없으므로 빈 배열 유지
+  useEffect(() => {
+    apiFetch(`${API_URL}/api/v1/event/events/me`, { method: "GET" })
+      .then(res => res.json())
+      .then(json => {
+        if (!json.isSuccess) return;
+        setJoinedEvents(json.result);
+      });
+  }, [API_URL]);
+
+
 
   const handleLogout = async () => {
     try {

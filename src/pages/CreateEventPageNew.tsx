@@ -63,7 +63,7 @@ export default function CreateEventPageNew() {
     };
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/events`, {
+      const res = await apiFetch(`${API_URL}/api/v1/event/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
