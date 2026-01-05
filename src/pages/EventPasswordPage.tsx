@@ -42,7 +42,7 @@ export default function EventPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await apiFetch(`${API_URL}/api/v1/events/verify`, {
+      const response = await apiFetch(`${API_URL}/api/v1/event/events/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inviteCode, password }),

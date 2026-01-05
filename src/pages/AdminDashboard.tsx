@@ -53,7 +53,7 @@ export default function AdminDashboard() {
   async function loadAdminEvent() {
     try {
       const res = await apiFetch(
-        `${API_URL}/api/v1/events/admin/detail?eventId=${currentEvent.id}`,
+        `${API_URL}/api/v1/event/events/admin/detail?eventId=${currentEvent.id}`,
         { method: "GET" }
       );
       const data = await res.json();
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       setParticipantsError(null);
 
       const res = await apiFetch(
-        `${API_URL}/api/v1/events/admin/members?eventId=${event.id}`,
+        `${API_URL}/api/v1/event/events/admin/members?eventId=${event.id}`,
         { method: "GET" }
       );
       const data = await res.json();
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
       setGroupError(null);
 
       const res = await apiFetch(
-        `${API_URL}/api/v1/events/${event.id}/groups`,
+        `${API_URL}/api/v1/event/events/${event.id}/groups`,
         { method: "GET" }
       );
       const data = await res.json();
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
     if (!newGroupName.trim()) return alert("그룹명을 입력하세요");
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/group/admin`, {
+      const res = await apiFetch(`${API_URL}/api/v1/event/groups/admin`, {
         method: "POST",
         body: JSON.stringify({
           eventId: event.id,
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
     if (!confirm("정말로 삭제하시겠습니까?")) return;
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/group/${groupId}`, {
+      const res = await apiFetch(`${API_URL}/api/v1/event/groups/${groupId}`, {
         method: "DELETE",
       });
       const data = await res.json();

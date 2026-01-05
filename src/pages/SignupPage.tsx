@@ -52,7 +52,7 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await apiFetch(`${API_URL}/api/v1/events/join`, {
+      const response = await apiFetch(`${API_URL}/api/v1/event/events/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
