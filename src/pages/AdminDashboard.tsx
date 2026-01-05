@@ -534,7 +534,7 @@ function NoticeWriteTab({ groups, event }) {
     };
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/post/admin`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/posts/admin`, {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -685,7 +685,7 @@ function EditEventModal({ open, onOpenChange, event, reloadEvent }: any) {
         endAt,
       };
 
-      const res = await apiFetch(`${API_URL}/api/v1/events/admin`, {
+      const res = await apiFetch(`${API_URL}/api/v1/event/events/admin`, {
         method: "PATCH",
         body: JSON.stringify(body),
       });

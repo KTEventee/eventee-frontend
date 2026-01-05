@@ -217,7 +217,7 @@ const uploadToS3 = async (presignedUrl: string, file: File) => {
 
   const loadEventGroups = async () => {
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/events/${eventId}/groups`, {
+      const res = await apiFetch(`${API_URL}/api/v1/event/events/${eventId}/groups`, {
         method: "GET",
       });
       const data = await res.json();
@@ -365,7 +365,7 @@ const handleSubmitGroupEdit = async () => {
       imgUrl: finalImageUrl,
     };
 
-    const res = await apiFetch(`${API_URL}/api/v1/group`, {
+    const res = await apiFetch(`${API_URL}/api/v1/event/groups`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
@@ -566,8 +566,8 @@ const handleSubmitGroupEdit = async () => {
 
     try {
       const url = editingPost
-        ? `${API_URL}/api/v1/post/${editingPost.id}`
-        : `${API_URL}/api/v1/post`;
+        ? `${API_URL}/api/v1/content/posts/${editingPost.id}`
+        : `${API_URL}/api/v1/content/posts`;
 
       console.log("[handleSubmitPost] request URL:", url);
 
@@ -604,7 +604,7 @@ const handleSubmitGroupEdit = async () => {
     };
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/comment`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/comments`, {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -624,7 +624,7 @@ const handleSubmitGroupEdit = async () => {
   // 댓글 삭제
   const handleDeleteComment = async (teamId: string, commentId: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/comment/${commentId}`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/comments/${commentId}`, {
         method: "DELETE",
       });
 
@@ -647,7 +647,7 @@ const handleSubmitGroupEdit = async () => {
     const voteText = option?.text ?? optionId;
 
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/post/vote`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/posts/vote`, {
         method: "POST",
         body: JSON.stringify({
           postId: Number(postId),
@@ -668,7 +668,7 @@ const handleSubmitGroupEdit = async () => {
   const handleDeletePost = async (teamId: string, postId: string) => {
     if (!window.confirm("게시글을 삭제하시겠어요?")) return;
     try {
-      const res = await apiFetch(`${API_URL}/api/v1/post/${postId}`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/posts/${postId}`, {
         method: "DELETE",
       });
 
@@ -713,7 +713,7 @@ const handleSubmitGroupEdit = async () => {
 useEffect(() => {
   const interval = setInterval(async () => {
 
-    const res = await apiFetch(`${API_URL}/api/v1/events/${eventId}/groups`);
+    const res = await apiFetch(`${API_URL}/api/v1/event/events/${eventId}/groups`);
     const data = await res.json();
     if (!data.isSuccess) return;
 
