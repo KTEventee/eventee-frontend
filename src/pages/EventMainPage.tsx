@@ -451,7 +451,7 @@ export default function EventMainPage() {
     try {
       console.log("[EventMainPage] 그룹 게시글 조회 시작", { eventId, groupId });
       const res = await apiFetch(
-        `${API_URL}/api/v1/content/posts/${eventId}/groups/${groupId}`,
+        `${API_URL}/api/v1/content/posts/${eventId}/gourps/${groupId}`,
         {
           method: "GET",
         }
