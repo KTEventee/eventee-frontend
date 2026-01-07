@@ -460,6 +460,7 @@ export default function EventMainPage() {
       console.log("[EventMainPage] 그룹 게시글 fetch 응답", res);
       const data = await res.json();
       console.log("[EventMainPage] 그룹 게시글 응답 JSON", { groupId, data });
+
       if (!data.isSuccess) {
         console.warn("[EventMainPage] 그룹 게시글 응답 isSuccess=false", {
           groupId,
@@ -468,7 +469,46 @@ export default function EventMainPage() {
         return [];
       }
 
-      const posts = data.result?.posts ?? [];
+      const maybe = (obj: any) => obj ?? undefined;
+    const root = maybe(data) || maybe(data.data) || {};
+
+    // 우선 result 경로를 잡아둠
+    const result = root.result ?? root;
+
+    let posts: any[] = [];
+
+    if (Array.isArray(result.posts)) {
+      posts = result.posts;
+    } else if (Array.isArray(result.lists)) {
+      // lists 배열에서 현재 groupId (숫자/문자 둘다 대응)와 매칭되는 항목의 posts 사용
+      const gidNum = Number(groupId);
+      const found = result.lists.find((it: any) =>
+        Number(it.groupNum) === gidNum ||
+        String(it.groupId) === String(groupId) ||
+        String(it.groupId) === String(Number(groupId))
+      );
+      posts = (found?.posts ?? []);
+    } else if (Array.isArray(root.lists)) {
+      // 혹시 루트가 바로 lists인 경우
+      const gidNum = Number(groupId);
+      const found = root.lists.find((it: any) =>
+        Number(it.groupNum) === gidNum ||
+        String(it.groupId) === String(groupId)
+      );
+      posts = (found?.posts ?? []);
+    } else {
+      // fallback: maybe result itself is an array of posts
+      if (Array.isArray(result)) posts = result;
+      else posts = [];
+    }
+
+    console.log("[EventMainPage] 파싱된 posts", { groupId, posts });
+
+    if (!posts || posts.length === 0) {
+      // 빈 배열이면 호출자에서 빈 상태로 처리하도록 빈 반환
+      return [];
+    }
+    
       const converted = posts.map((post: any) => convertPost(post));
       return converted;
     } catch (err) {
