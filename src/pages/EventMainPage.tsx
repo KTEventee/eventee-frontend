@@ -406,19 +406,38 @@ export default function EventMainPage() {
   // ==========================
     const convertPost = (p: any): Post => {
       const rawType = (p.type ?? "").toString();
-      const hasVoteFields = Array.isArray(p.pollOptions) || Array.isArray(p.voteOptions) || p.voteTitle != null || p.voteContent != null;
+      const hasVoteFields =
+    Array.isArray(p.pollOptions) ||
+    Array.isArray(p.voteOptions) ||
+    (typeof p.voteContent === "string" && p.voteContent.includes("_")) ||
+    p.voteTitle != null;
+
       const isVote =
         rawType.toLowerCase() === "vote" ||
         rawType.toUpperCase() === "VOTE" ||
         hasVoteFields;
 
-       const rawOptions = p.pollOptions ?? p.voteOptions ?? p.voteContent ?? [];
-  const pollOptions = Array.isArray(rawOptions)
-    ? rawOptions.map((opt: any, idx: number) => {
-        // 여러 API가 option 식별자/키를 다르게 줄 수 있으니 안전하게 추출
-        const optionNo = opt.optionNo ?? opt.optionNoString ?? opt.optionNo?? opt.optionIndex ?? (opt.optionNo === 0 ? 0 : undefined);
+       // 1) 배열 형태 옵션 처리 (pollOptions, voteOptions, voteOptions could be array of strings or objects)
+  let optionsArr: any[] | undefined = undefined;
+  if (Array.isArray(p.pollOptions)) optionsArr = p.pollOptions;
+  else if (Array.isArray(p.voteOptions)) optionsArr = p.voteOptions;
+
+  // 2) 문자열 형태(voteContent) 처리: "_"로 분리
+  if (!optionsArr && typeof p.voteContent === "string") {
+    const parts = p.voteContent
+      .split("_")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    optionsArr = parts.map((text: string, idx: number) => ({ _text: text, _idx: idx }));
+  }
+
+  // 표준 PollOption 배열 생성
+  const pollOptions: PollOption[] | undefined = Array.isArray(optionsArr)
+    ? optionsArr.map((opt: any, idx: number) => {
+        // opt가 문자열일 경우와 객체인 경우 모두 안전히 처리
+        const optionNo = opt.optionNo ?? opt.optionNoString ?? opt.optionIndex ?? opt._idx ?? undefined;
         const id = optionNo != null ? `opt${optionNo}` : `opt${idx + 1}`;
-        const text = opt.text ?? opt.optionText ?? opt.option ?? String(opt);
+        const text = opt.text ?? opt.optionText ?? opt.option ?? opt._text ?? String(opt);
         const votes = Number(opt.votes ?? opt.count ?? 0);
         const percent = opt.percent ?? opt.rate ?? undefined;
         const isMine = Boolean(opt.isMine ?? opt.isMineFlag ?? false);
@@ -426,7 +445,8 @@ export default function EventMainPage() {
       })
     : undefined;
 
-      const userVoteRaw = p.userVote ?? p.voteSelected ?? p.myVote ?? undefined;
+  // userVote 대응 (숫자거나 "optN" 형태, 혹은 인덱스 값)
+  const userVoteRaw = p.userVote ?? p.voteSelected ?? p.myVote ?? undefined;
   const userVote =
     isVote && userVoteRaw != null
       ? typeof userVoteRaw === "number"
@@ -436,7 +456,7 @@ export default function EventMainPage() {
         : `opt${userVoteRaw}`
       : undefined;
 
-      const comments = (p.comments ?? []).map((c: any) => ({
+  const comments = (p.comments ?? []).map((c: any) => ({
     id: String(c.commentId ?? c.id ?? ""),
     author: c.writerNickname ?? c.author ?? c.nickname ?? "익명",
     content: c.content ?? c.text ?? "",
@@ -451,7 +471,7 @@ export default function EventMainPage() {
     content: p.content ?? p.text ?? "",
     type: isVote ? "vote" : "text",
     pollQuestion: p.pollQuestion ?? p.voteTitle ?? p.voteQuestion ?? undefined,
-    pollOptions: pollOptions,
+    pollOptions: pollOptions && pollOptions.length > 0 ? pollOptions : undefined,
     userVote,
     createdAt: p.createdAt ?? p.createdAtAt ?? undefined,
     comments,
