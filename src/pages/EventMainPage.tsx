@@ -552,6 +552,7 @@ export default function EventMainPage() {
 
     const body: Record<string, any> = {
       groupId: Number(selectedTeamId),
+      eventId: eventId,
       type: isPoll ? "VOTE" : "TEXT",
       content: newPostContent,
       voteTitle: isPoll ? pollQuestion : null,
