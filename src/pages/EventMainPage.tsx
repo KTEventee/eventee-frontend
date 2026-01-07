@@ -405,43 +405,60 @@ export default function EventMainPage() {
   // Post 변환 함수
   // ==========================
     const convertPost = (p: any): Post => {
-      const isVote = (p.type ?? "").toString().toLowerCase() === "vote";
+      const rawType = (p.type ?? "").toString();
+      const hasVoteFields = Array.isArray(p.pollOptions) || Array.isArray(p.voteOptions) || p.voteTitle != null || p.voteContent != null;
+      const isVote =
+        rawType.toLowerCase() === "vote" ||
+        rawType.toUpperCase() === "VOTE" ||
+        hasVoteFields;
 
-      const pollOptions = isVote && Array.isArray(p.pollOptions)
-        ? p.pollOptions.map((opt: any) => ({
-            id: `opt${opt.optionNo}`,
-            text: opt.text,
-            votes: opt.votes,
-            percent: opt.percent,
-            isMine: opt.isMine
-          }))
-        : undefined;
+       const rawOptions = p.pollOptions ?? p.voteOptions ?? p.voteContent ?? [];
+  const pollOptions = Array.isArray(rawOptions)
+    ? rawOptions.map((opt: any, idx: number) => {
+        // 여러 API가 option 식별자/키를 다르게 줄 수 있으니 안전하게 추출
+        const optionNo = opt.optionNo ?? opt.optionNoString ?? opt.optionNo?? opt.optionIndex ?? (opt.optionNo === 0 ? 0 : undefined);
+        const id = optionNo != null ? `opt${optionNo}` : `opt${idx + 1}`;
+        const text = opt.text ?? opt.optionText ?? opt.option ?? String(opt);
+        const votes = Number(opt.votes ?? opt.count ?? 0);
+        const percent = opt.percent ?? opt.rate ?? undefined;
+        const isMine = Boolean(opt.isMine ?? opt.isMineFlag ?? false);
+        return { id, text, votes, percent, isMine } as PollOption;
+      })
+    : undefined;
 
-      const userVote = isVote && p.userVote != null
-        ? `opt${p.userVote}`
-        : undefined;
+      const userVoteRaw = p.userVote ?? p.voteSelected ?? p.myVote ?? undefined;
+  const userVote =
+    isVote && userVoteRaw != null
+      ? typeof userVoteRaw === "number"
+        ? `opt${userVoteRaw}`
+        : userVoteRaw.toString().startsWith("opt")
+        ? userVoteRaw.toString()
+        : `opt${userVoteRaw}`
+      : undefined;
 
-      return {
-        id: String(p.postId),
-        author: p.author,
-        content: p.content,
-        type: isVote ? "vote" : "text",
-        pollQuestion: p.pollQuestion,
-        pollOptions,
-        userVote,
-        createdAt: p.createdAt,
-        comments: (p.comments ?? []).map((c: any) => ({
-          id: String(c.commentId),
-          author: c.writerNickname,
-          content: c.content,
-          timestamp: c.createdAt,
-          imageUrl: undefined,
-          isWrite: Boolean(c.isMine)    
-        })),
-        likes: 0,
-        isLiked: false,
-        isWrite: Boolean(p.isMine),    
-      };
+      const comments = (p.comments ?? []).map((c: any) => ({
+    id: String(c.commentId ?? c.id ?? ""),
+    author: c.writerNickname ?? c.author ?? c.nickname ?? "익명",
+    content: c.content ?? c.text ?? "",
+    timestamp: c.createdAt ?? c.createdAtAt ?? c.timestamp ?? "",
+    imageUrl: c.imageUrl ?? c.img ?? undefined,
+    isWrite: Boolean(c.isMine ?? c.isWrite ?? false),
+  }));
+
+  return {
+    id: String(p.postId ?? p.id ?? ""),
+    author: p.author ?? p.writerNickname ?? p.writer ?? "알 수 없음",
+    content: p.content ?? p.text ?? "",
+    type: isVote ? "vote" : "text",
+    pollQuestion: p.pollQuestion ?? p.voteTitle ?? p.voteQuestion ?? undefined,
+    pollOptions: pollOptions,
+    userVote,
+    createdAt: p.createdAt ?? p.createdAtAt ?? undefined,
+    comments,
+    likes: Number(p.likes ?? 0),
+    isLiked: Boolean(p.isLiked ?? false),
+    isWrite: Boolean(p.isMine ?? p.isWrite ?? false),
+  };
     };
 
 
@@ -508,7 +525,7 @@ export default function EventMainPage() {
       // 빈 배열이면 호출자에서 빈 상태로 처리하도록 빈 반환
       return [];
     }
-    
+
       const converted = posts.map((post: any) => convertPost(post));
       return converted;
     } catch (err) {
