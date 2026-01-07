@@ -406,37 +406,58 @@ export default function EventMainPage() {
   // ==========================
     const convertPost = (p: any): Post => {
       const rawType = (p.type ?? "").toString();
-      const hasVoteFields =
+  const hasVoteFields =
     Array.isArray(p.pollOptions) ||
     Array.isArray(p.voteOptions) ||
     (typeof p.voteContent === "string" && p.voteContent.includes("_")) ||
     p.voteTitle != null;
 
-      const isVote =
-        rawType.toLowerCase() === "vote" ||
-        rawType.toUpperCase() === "VOTE" ||
-        hasVoteFields;
+  const isVote =
+    rawType.toLowerCase() === "vote" ||
+    rawType.toUpperCase() === "VOTE" ||
+    hasVoteFields;
 
-       // 1) 배열 형태 옵션 처리 (pollOptions, voteOptions, voteOptions could be array of strings or objects)
+  // 원래 옵션 소스 결정
   let optionsArr: any[] | undefined = undefined;
   if (Array.isArray(p.pollOptions)) optionsArr = p.pollOptions;
   else if (Array.isArray(p.voteOptions)) optionsArr = p.voteOptions;
 
-  // 2) 문자열 형태(voteContent) 처리: "_"로 분리
+  // 서버가 voteOptions에 하나의 객체로 오고 그 객체의 text가 "a_b" 같은 형태이면 분리
+  if (
+    Array.isArray(optionsArr) &&
+    optionsArr.length === 1 &&
+    typeof optionsArr[0].text === "string" &&
+    optionsArr[0].text.includes("_")
+  ) {
+    const parts = optionsArr[0].text
+      .split("_")
+      .map((s: string) => s.trim())
+      .filter(Boolean)
+      .slice(0, 2); // 옵션은 2개만 사용
+    optionsArr = parts.map((text: string, idx: number) => ({
+      optionNo: idx + 1,
+      text,
+      votes: 0,
+      percent: 0,
+      isMine: false,
+    }));
+  }
+
+  // 문자열 형태(voteContent)도 "_"로 분리
   if (!optionsArr && typeof p.voteContent === "string") {
     const parts = p.voteContent
       .split("_")
       .map((s: string) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .slice(0, 2);
     optionsArr = parts.map((text: string, idx: number) => ({ _text: text, _idx: idx }));
   }
 
   // 표준 PollOption 배열 생성
   const pollOptions: PollOption[] | undefined = Array.isArray(optionsArr)
     ? optionsArr.map((opt: any, idx: number) => {
-        // opt가 문자열일 경우와 객체인 경우 모두 안전히 처리
-        const optionNo = opt.optionNo ?? opt.optionNoString ?? opt.optionIndex ?? opt._idx ?? undefined;
-        const id = optionNo != null ? `opt${optionNo}` : `opt${idx + 1}`;
+        const optionNo = opt.optionNo ?? opt.optionNoString ?? opt.optionIndex ?? opt._idx ?? (idx + 1);
+        const id = `opt${optionNo}`;
         const text = opt.text ?? opt.optionText ?? opt.option ?? opt._text ?? String(opt);
         const votes = Number(opt.votes ?? opt.count ?? 0);
         const percent = opt.percent ?? opt.rate ?? undefined;
@@ -445,7 +466,7 @@ export default function EventMainPage() {
       })
     : undefined;
 
-  // userVote 대응 (숫자거나 "optN" 형태, 혹은 인덱스 값)
+  // userVote 대응
   const userVoteRaw = p.userVote ?? p.voteSelected ?? p.myVote ?? undefined;
   const userVote =
     isVote && userVoteRaw != null
