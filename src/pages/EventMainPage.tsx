@@ -22,6 +22,7 @@ import { apiFetch } from "../utils/apiFetch";
 import axios from 'axios';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
+import Battle from "./BattleAnimation";
 
 type Comment = {
   id: string;
@@ -136,6 +137,11 @@ export default function EventMainPage() {
   });
   const [cannonLoading, setCannonLoading] = useState(false);
 
+  //대포
+  const [fire, setFire] = useState(false);
+  const [explode, setExplode] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
   const formatDateOnly = (isoString: string) => {
     if (!isoString) return "";
 
@@ -192,8 +198,21 @@ export default function EventMainPage() {
         const client = Stomp.over(socket);
         client.connect({}, () => {
           client.subscribe(`/sub/game/${eventId}/result`, (msg: any) => {
-            console.log('💥 결과:', msg.body);
-            alert(msg.body);
+            setResult(msg.body);
+
+            // 1. 발사 시작
+            setFire(true);
+
+            // 2. 날아간 뒤 폭발
+            setTimeout(() => {
+              setExplode(true);
+            }, 800);
+
+            // 3. 전체 종료
+            setTimeout(() => {
+              setFire(false);
+              setExplode(false);
+            }, 2500);
           });
         });
         setStompClient(client);
@@ -1581,6 +1600,11 @@ export default function EventMainPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <Battle
+      fire={fire}
+      explode={explode}
+      result={result}
+    />
     </div>
   );
 }

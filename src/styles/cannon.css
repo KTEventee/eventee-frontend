@@ -1,0 +1,77 @@
+.battle-field {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at bottom left, #111, #000);
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.cannon {
+  position: absolute;
+  bottom: 60px;
+  left: 60px;
+  font-size: 64px;
+  transform-origin: center;
+}
+
+.cannon.fire {
+  animation: recoil 0.3s ease-out;
+}
+
+@keyframes recoil {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-15px); }
+  100% { transform: translateX(0); }
+}
+
+.bullet {
+  position: absolute;
+  bottom: 90px;
+  left: 110px;
+  width: 18px;
+  height: 18px;
+  background: orange;
+  border-radius: 50%;
+  box-shadow: 0 0 12px orange;
+  animation: fly 0.8s linear forwards;
+}
+
+@keyframes fly {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(calc(100vw - 200px), -300px);
+  }
+}
+
+.explosion {
+  position: absolute;
+  top: 35%;
+  right: 20%;
+  font-size: 80px;
+  animation: explode 0.4s ease-out;
+  text-align: center;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.result-text {
+  margin-top: 16px;
+  font-size: 36px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 10px red;
+}
