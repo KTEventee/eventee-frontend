@@ -22,7 +22,8 @@ import { apiFetch } from "../utils/apiFetch";
 import axios from 'axios';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
-import Battle from "./BattleAnimation";
+import Battle from "../components/BattleAnimation";
+import RpsGame from "../components/RpsGame";
 
 type Comment = {
   id: string;
@@ -96,6 +97,10 @@ export default function EventMainPage() {
   const location = useLocation();
   const { user } = useApp();
   const [stompClient, setStompClient] = useState<any>(null);
+
+  if (!user) {
+    return null;
+  }
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -1604,7 +1609,19 @@ export default function EventMainPage() {
       fire={fire}
       explode={explode}
       result={result}
-    />
+      />
+      <div className="flex gap-2">
+        <EventeeButton onClick={handleCannonGame}>
+          대포쏘기
+        </EventeeButton>
+
+        <RpsGame
+          eventId={eventId}
+          apiUrl={API_URL}
+          myMemberId={Number(user.id)}
+          myNickname={displayNickname}
+        />
+      </div>
     </div>
   );
 }
