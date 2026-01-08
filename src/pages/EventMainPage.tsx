@@ -19,9 +19,9 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { apiFetch } from "../utils/apiFetch";
-// import axios from 'axios';
-// import SockJS from 'sockjs-client';
-// import Stomp from 'stompjs';
+import axios from 'axios';
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
 
 type Comment = {
   id: string;
@@ -94,7 +94,7 @@ export default function EventMainPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
-  const [stompClient, setStompClient] = useState(null);
+  const [stompClient, setStompClient] = useState<any>(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -134,6 +134,7 @@ export default function EventMainPage() {
     imgUrl: "",
     leader: "",
   });
+  const [cannonLoading, setCannonLoading] = useState(false);
 
   const formatDateOnly = (isoString: string) => {
     if (!isoString) return "";
@@ -183,24 +184,97 @@ export default function EventMainPage() {
   useEffect(() => {
     console.log("[EventMainPage] teams 변경됨", teams);
   }, [teams]);
-  // 대포게임 관련 코드 
-  // useEffect(() => {
-  //       const socket = new SockJS('http://api.eventee.cloud/ws');
-  //       const client = Stomp.over(socket);
-  //       client.connect({}, () => {
-  //           client.subscribe(`/sub/game/${eventId}/result`, (msg) => {
-  //               console.log('💥 결과:', msg.body);
-  //               alert(msg.body);
-  //           });
-  //       });
-  //       setStompClient(client);
 
-  //       return () => {
-  //           if (client) {
-  //               client.disconnect();
-  //           }
-  //       };
-  //   }, [eventId]);
+  // 대포게임 관련 코드 
+  
+  useEffect(() => {
+        const socket = new SockJS('https://api.eventee.cloud/ws');
+        const client = Stomp.over(socket);
+        client.connect({}, () => {
+          client.subscribe(`/sub/game/${eventId}/result`, (msg: any) => {
+            console.log('💥 결과:', msg.body);
+            alert(msg.body);
+          });
+        });
+        setStompClient(client);
+
+        return () => {
+          if (client) {
+            try {
+              client.disconnect(() => {});
+            } catch (e) {
+              console.warn('[EventMainPage] client.disconnect error', e);
+            }
+          }
+        };
+    }, [eventId]);
+
+  // 대포게임: 이벤트 참여자 닉네임 목록 조회 (있으면 사용, 없으면 admin endpoint로 폴백)
+  const getEventMemberNicknames = async (): Promise<string[]> => {
+    try {
+      const tryUrls = [
+        `${API_URL}/api/v1/event/events/${eventId}/members/nickname`,
+        `${API_URL}/api/v1/event/events/admin/members/nickname`,
+      ];
+
+      for (const url of tryUrls) {
+        try {
+          console.log("[EventMainPage] 멤버 닉네임 조회 시도", url);
+          const res = await apiFetch(url, { method: "GET" });
+          if (!res.ok) {
+            console.warn("[EventMainPage] 멤버 조회 HTTP 비정상", { url, status: res.status });
+            continue;
+          }
+          const data = await res.json();
+          console.log("[EventMainPage] 멤버 조회 응답", { url, data });
+
+          const root = data?.result ?? data?.data ?? data;
+          if (Array.isArray(root)) return root.map(String);
+
+          const arr = root?.members ?? root?.nicknames ?? root?.result ?? null;
+          if (Array.isArray(arr)) return arr.map((v: any) => String(v));
+        } catch (innerErr) {
+          console.warn("[EventMainPage] 멤버 조회 예외, 다음 엔드포인트로 폴백", innerErr);
+          continue;
+        }
+      }
+
+      return [];
+    } catch (err) {
+      console.error("[EventMainPage] 멤버 닉네임 조회 실패:", err);
+      return [];
+    }
+  };
+
+  // 대포 게임 시작: 닉네임 목록을 보내면 서버가 한명을 골라 WebSocket으로 결과 전송
+  const handleCannonGame = async () => {
+    try {
+      console.log("[EventMainPage] 대포 게임 시작 요청");
+      const nicknames = await getEventMemberNicknames();
+      console.log("[EventMainPage] 전송할 닉네임 목록", nicknames);
+      if (!nicknames || nicknames.length === 0) {
+        console.warn("[EventMainPage] 전송할 닉네임이 없습니다.");
+        return;
+      }
+
+      const res = await apiFetch(`${API_URL}/api/v1/game/${eventId}/cannon`, {
+        method: "POST",
+        body: JSON.stringify(nicknames),
+      });
+
+      console.log("[EventMainPage] 대포 게임 API 응답", res);
+      const data = await res.json();
+      console.log("[EventMainPage] 대포 게임 응답 JSON", data);
+      if (!data?.isSuccess) {
+        console.warn("[EventMainPage] 대포 게임 시작 실패", data);
+        return;
+      }
+
+      console.log("[EventMainPage] 대포 게임 요청 성공, 서버에서 결과 전송 대기");
+    } catch (err) {
+      console.error("[EventMainPage] 대포 게임 요청 오류:", err);
+    }
+  };
 
   const assignGroupColor = (groupNo?: number) => {
     const palette = ["#FFAB5D", "#E8E4D9", "#F5D0C5", "#C7D2FE", "#FDE68A"];
@@ -898,6 +972,22 @@ export default function EventMainPage() {
               운영자 페이지
             </EventeeButton>
           )}
+
+          <EventeeButton
+            variant="ghost"
+            onClick={async () => {
+              try {
+                setCannonLoading(true);
+                await handleCannonGame();
+              } finally {
+                setCannonLoading(false);
+              }
+            }}
+            disabled={cannonLoading}
+            title="대포 게임 시작"
+          >
+            {cannonLoading ? "대포 중..." : "대포쏘기"}
+          </EventeeButton>
 
           <button
             type="button"
