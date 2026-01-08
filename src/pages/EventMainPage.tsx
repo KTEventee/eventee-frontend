@@ -212,21 +212,19 @@ export default function EventMainPage() {
   // 대포게임: 이벤트 참여자 닉네임 목록 조회 (있으면 사용, 없으면 admin endpoint로 폴백)
   const getEventMemberNicknames = async (): Promise<string[]> => {
     try {
-      const tryUrls = [
-        `${API_URL}/api/v1/event/events/${eventId}/members/nickname`,
-        `${API_URL}/api/v1/event/events/admin/members/nickname`,
-      ];
+    
+      const tryUrl = `${API_URL}/api/v1/event/events/admin/members/nickname?eventId=${eventId}`;
 
-      for (const url of tryUrls) {
+      
         try {
-          console.log("[EventMainPage] 멤버 닉네임 조회 시도", url);
-          const res = await apiFetch(url, { method: "GET" });
+          console.log("[EventMainPage] 멤버 닉네임 조회 시도", tryUrl);
+          const res = await apiFetch(tryUrl, { method: "GET" });
           if (!res.ok) {
-            console.warn("[EventMainPage] 멤버 조회 HTTP 비정상", { url, status: res.status });
-            continue;
+            console.warn("[EventMainPage] 멤버 조회 HTTP 비정상", { tryUrl, status: res.status });
+            throw new Error(`HTTP ${res.status}`);
           }
           const data = await res.json();
-          console.log("[EventMainPage] 멤버 조회 응답", { url, data });
+          console.log("[EventMainPage] 멤버 조회 응답", { tryUrl, data });
 
           const root = data?.result ?? data?.data ?? data;
           if (Array.isArray(root)) return root.map(String);
@@ -235,9 +233,8 @@ export default function EventMainPage() {
           if (Array.isArray(arr)) return arr.map((v: any) => String(v));
         } catch (innerErr) {
           console.warn("[EventMainPage] 멤버 조회 예외, 다음 엔드포인트로 폴백", innerErr);
-          continue;
         }
-      }
+      
 
       return [];
     } catch (err) {
