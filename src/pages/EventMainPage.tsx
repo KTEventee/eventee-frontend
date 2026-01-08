@@ -94,7 +94,7 @@ export default function EventMainPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useApp();
-  const [stompClient, setStompClient] = useState(null);
+  const [stompClient, setStompClient] = useState<any>(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -199,9 +199,13 @@ export default function EventMainPage() {
         setStompClient(client);
 
         return () => {
-            if (client) {
-                client.disconnect();
+          if (client) {
+            try {
+              client.disconnect(() => {});
+            } catch (e) {
+              console.warn('[EventMainPage] client.disconnect error', e);
             }
+          }
         };
     }, [eventId]);
 
