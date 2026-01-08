@@ -212,10 +212,8 @@ export default function EventMainPage() {
   // 대포게임: 이벤트 참여자 닉네임 목록 조회 (있으면 사용, 없으면 admin endpoint로 폴백)
   const getEventMemberNicknames = async (): Promise<string[]> => {
     try {
-    
+  
       const tryUrl = `${API_URL}/api/v1/event/events/admin/members/nickname?eventId=${eventId}`;
-
-      
         try {
           console.log("[EventMainPage] 멤버 닉네임 조회 시도", tryUrl);
           const res = await apiFetch(tryUrl, { method: "GET" });
@@ -255,7 +253,7 @@ export default function EventMainPage() {
       }
 
       const res = await apiFetch(`${API_URL}/api/v1/game/${eventId}/cannon`, {
-        method: "POST",
+        method: "GET",
         body: JSON.stringify(nicknames),
       });
 
