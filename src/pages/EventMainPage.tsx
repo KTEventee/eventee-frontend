@@ -1009,6 +1009,12 @@ export default function EventMainPage() {
           >
             {cannonLoading ? "대포 중..." : "대포쏘기"}
           </EventeeButton>
+          <RpsGame
+          eventId={eventId}
+          apiUrl={API_URL}
+          myMemberId={Number(user.id)}
+          myNickname={displayNickname}
+        />
 
           <button
             type="button"
@@ -1610,18 +1616,6 @@ export default function EventMainPage() {
       explode={explode}
       result={result}
       />
-      <div className="flex gap-2">
-        <EventeeButton onClick={handleCannonGame}>
-          대포쏘기
-        </EventeeButton>
-
-        <RpsGame
-          eventId={eventId}
-          apiUrl={API_URL}
-          myMemberId={Number(user.id)}
-          myNickname={displayNickname}
-        />
-      </div>
     </div>
   );
 }

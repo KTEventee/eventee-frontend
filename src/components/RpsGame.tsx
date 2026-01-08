@@ -25,50 +25,48 @@ export default function RpsGame({
 }: Props) {
   const [client, setClient] = useState<any>(null);
 
-  const [started, setStarted] = useState(false);
-  const [leader, setLeader] = useState<PlayerDto | null>(null);
-  const [players, setPlayers] = useState<PlayerDto[]>([]);
-  const [gameId, setGameId] = useState<number | null>(null);
+  const [started, setStarted] = useState(false);    
+    const [leader, setLeader] = useState<PlayerDto | null>(null);
+    const [players, setPlayers] = useState<PlayerDto[]>([]);
+    const [gameId, setGameId] = useState<number | null>(null);
 
-  const [myChoice, setMyChoice] = useState<RPSType | null>(null);
-  const [isAlive, setIsAlive] = useState(true);
+    const [myChoice, setMyChoice] = useState<RPSType | null>(null);
+    const [isAlive, setIsAlive] = useState(true);
 
   /* ===========================
      WebSocket 연결
   =========================== */
   useEffect(() => {
     const socket = new SockJS(`${apiUrl}/ws`);
-    const stomp = Stomp.over(socket);
+  const stomp = Stomp.over(socket);
 
-    stomp.connect({}, () => {
-      // 게임 시작 (목록용)
-      stomp.subscribe(`/sub/game/${eventId}/start`, (msg) => {
-        const data: StartGameDto = JSON.parse(msg.body);
+  stomp.connect({}, () => {
+    // 게임 시작 결과
+    stomp.subscribe(`/sub/game/${eventId}/start`, (msg) => {
+      const data: StartGameDto = JSON.parse(msg.body);
 
-        setStarted(true);
-        setLeader(data.leader);
-        setPlayers(data.players);
-        setGameId(null);
-        setMyChoice(null);
-        setIsAlive(true);
-      });
-
-      // 라운드 결과
-      stomp.subscribe(`/sub/game/${eventId}/round`, (msg) => {
-        const data: GamePlayDto = JSON.parse(msg.body);
-
-        setLeader(data.leader);
-        setPlayers(data.players);
-        setGameId(data.gameId);
-
-        const me = data.players.find(
-          (p) => p.memberId === myMemberId
-        );
-        setIsAlive(!!me);
-      });
+      setStarted(true);
+      setLeader(data.leader);
+      setPlayers(data.players);
+      setGameId(null);
+      setMyChoice(null);
+      setIsAlive(true);
     });
 
-    setClient(stomp);
+    // 라운드 결과
+    stomp.subscribe(`/sub/game/${eventId}/round`, (msg) => {
+      const data: GamePlayDto = JSON.parse(msg.body);
+
+      setLeader(data.leader);
+      setPlayers(data.players);
+      setGameId(data.gameId);
+
+      const me = data.players.find(
+        (p) => p.memberId === myMemberId
+      );
+      setIsAlive(!!me);
+    });
+  });
     return () => {
           if (client) {
             try {
@@ -83,34 +81,46 @@ export default function RpsGame({
   /* ===========================
      선택 전송
   =========================== */
-  const play = (type: RPSType) => {
-    if (!client || !gameId) return;
+  const play = async (type: RPSType) => {
+  if (!isAlive) return;
 
-    setMyChoice(type);
+  setMyChoice(type);
 
-    client.send(
-      `/pub/game/${eventId}/play`,
-      {},
-      JSON.stringify({
-        memberId: myMemberId,
-        nickname: myNickname,
-        type,
-      })
-    );
-  };
+  await fetch(`${apiUrl}/api/v1/game/rsp/round`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      leader: {
+        ...leader,
+        type: leader?.memberId === myMemberId ? type : leader?.type,
+      },
+      players: players.map((p) =>
+        p.memberId === myMemberId ? { ...p, type } : p
+      ),
+      gameId,
+      eventId,
+    }),
+  });
+};
 
   /* ===========================
      게임 시작 (사회자)
   =========================== */
-  const startGame = () => {
-    if (!client) return;
-
-    client.send(
-      `/pub/game/${eventId}/start`,
-      {},
-      JSON.stringify({ eventId })
-    );
-  };
+  const startGame = async (winnerCnt: number) => {
+  await fetch(`${apiUrl}/api/v1/game/rsp/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventId,
+      winnerCnt,
+      leader: {
+        memberId: myMemberId,
+        nickname: myNickname,
+      },
+      players, // 이미 알고 있거나 서버에서 채워도 됨
+    }),
+  });
+};
 
   /* ===========================
      UI
@@ -120,10 +130,13 @@ export default function RpsGame({
       <h3 className="font-bold text-sm">✊✌️✋ 가위바위보</h3>
 
       {!started && (
-        <EventeeButton variant="outline" onClick={startGame}>
-          가위바위보 시작
-        </EventeeButton>
-      )}
+            <EventeeButton
+                variant="outline"
+                onClick={() => startGame(1)} // winnerCnt
+            >
+                가위바위보 시작
+            </EventeeButton>
+        )}  
 
       {started && (
         <>
@@ -142,20 +155,20 @@ export default function RpsGame({
         </>
       )}
 
-      {/* 선택 UI */}
-      {gameId && isAlive && (
-        <div className="flex gap-2 justify-center pt-2">
-          <RpsButton label="✊" type="ROCK" onClick={play} />
-          <RpsButton label="✌️" type="SCISSOR" onClick={play} />
-          <RpsButton label="✋" type="PAPER" onClick={play} />
-        </div>
-      )}
+     {/* ② 생존자만 선택 */}
+    {started && gameId && isAlive && (
+    <div className="flex gap-2 justify-center pt-2">
+        <RpsButton label="✊" type="ROCK" onClick={play} />
+        <RpsButton label="✌️" type="SCISSOR" onClick={play} />
+        <RpsButton label="✋" type="PAPER" onClick={play} />
+    </div>
+    )}
 
-      {!isAlive && gameId && (
-        <p className="text-red-500 text-sm font-bold">
-          ❌ 탈락
+     {started && gameId && !isAlive && (
+        <p className="text-red-500 text-sm font-bold text-center">
+            ❌ 탈락
         </p>
-      )}
+    )}
     </div>
   );
 }
