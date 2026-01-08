@@ -188,7 +188,7 @@ export default function EventMainPage() {
   // 대포게임 관련 코드 
   
   useEffect(() => {
-        const socket = new SockJS('https://api.eventee.cloud/ws');
+        const socket = new SockJS('https://api.eventee.cloud/api/v1/game/ws');
         const client = Stomp.over(socket);
         client.connect({}, () => {
           client.subscribe(`/sub/game/${eventId}/result`, (msg: any) => {
