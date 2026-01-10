@@ -611,7 +611,7 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
 const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
   try {
     const res = await apiFetch(
-      `${API_URL}/api/v1/content/posts/${eventId}/groups/${groupId}`,
+      `${API_URL}/api/v1/content/posts/${eventId}`,
       { method: "GET" }
     );
 
@@ -619,19 +619,18 @@ const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
     if (!data.isSuccess) return [];
 
     const lists = data.result?.lists;
-    if (!Array.isArray(lists) || lists.length === 0) return [];
+    if (!Array.isArray(lists)) return [];
 
-    // groupId별 호출 → 항상 첫 번째
-    const posts = lists[0]?.posts ?? [];
-    console.log("[DEBUG] fetchGroupPosts > raw posts", posts);
-    if (!Array.isArray(posts)) return [];
+    const group = lists.find((l: any) => String(l.groupNum) === String(groupId));
+    if (!group) return [];
 
-    return posts.map(convertPost);
+    return group.posts.map(convertPost);
   } catch (err) {
     console.error("그룹 게시글 API 오류:", err);
     return [];
   }
 };
+
 
 
   // ==========================
