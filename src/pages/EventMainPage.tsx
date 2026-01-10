@@ -582,6 +582,13 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
     isWrite: Boolean(c.isMine ?? c.isWrite ?? false),
   }));
 
+    console.log("[DEBUG] convertPost input", {
+    postId: p.postId,
+    type: p.type,
+    comments: p.comments,
+  });
+
+
   return {
     id: String(p.postId ?? p.id ?? ""),
     author: p.writerNickname,
@@ -616,6 +623,7 @@ const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
 
     // groupId별 호출 → 항상 첫 번째
     const posts = lists[0]?.posts ?? [];
+    console.log("[DEBUG] fetchGroupPosts > raw posts", posts);
     if (!Array.isArray(posts)) return [];
 
     return posts.map(convertPost);
@@ -788,7 +796,7 @@ const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
   const handleDeleteComment = async (teamId: string, commentId: string) => {
     try {
       console.log("[EventMainPage] 댓글 삭제 요청", { commentId });
-      const res = await apiFetch(`${API_URL}/api/v1/comment/${commentId}`, {
+      const res = await apiFetch(`${API_URL}/api/v1/content/comments/${commentId}`, {
         method: "DELETE",
       });
 
