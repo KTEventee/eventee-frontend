@@ -978,19 +978,24 @@ console.log(
             </EventeeButton>
           )}
 
-          <EventeeButton
-            variant="ghost"
-            onClick={async () => {
-              try {
-                setCannonLoading(true);
-                await handleCannonGame();
-              } finally {
-                setCannonLoading(false);
-              }
-            }}
-            disabled={cannonLoading}
-            title="대포 게임 시작"
-          >
+    {isEventHost && (
+      <EventeeButton
+        variant="ghost"
+        onClick={async () => {
+          try {
+            setCannonLoading(true);
+            await handleCannonGame();
+          } finally {
+            setCannonLoading(false);
+          }
+        }}
+        disabled={cannonLoading}
+        title="대포 게임 시작"
+      >
+        {cannonLoading ? "대포 중..." : "대포쏘기"}
+      </EventeeButton>
+    )}
+
             {cannonLoading ? "대포 중..." : "대포쏘기"}
           {/* </EventeeButton>
           <RpsGame
