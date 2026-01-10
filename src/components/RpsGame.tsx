@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 import EventeeButton from "./EventeeButton";
-
-import {
-  RPSType,
-  PlayerDto,
-  StartGameDto,
-  GamePlayDto,
-} from "./../types/game/rps";
+import { RPSType, PlayerDto, StartGameDto, GamePlayDto } from "./../types/game/rps";
 
 interface Props {
   eventId: number;
@@ -25,102 +19,87 @@ export default function RpsGame({
 }: Props) {
   const [client, setClient] = useState<any>(null);
 
-  const [started, setStarted] = useState(false);    
-    const [leader, setLeader] = useState<PlayerDto | null>(null);
-    const [players, setPlayers] = useState<PlayerDto[]>([]);
-    const [gameId, setGameId] = useState<number | null>(null);
-
-    const [myChoice, setMyChoice] = useState<RPSType | null>(null);
-    const [isAlive, setIsAlive] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [leader, setLeader] = useState<PlayerDto | null>(null);
+  const [players, setPlayers] = useState<PlayerDto[]>([]);
+  const [gameId, setGameId] = useState<number | null>(null);
+  const [isAlive, setIsAlive] = useState(true);
 
   /* ===========================
      WebSocket 연결
   =========================== */
   useEffect(() => {
     const socket = new SockJS(`${apiUrl}/ws`);
-  const stomp = Stomp.over(socket);
+    const stomp = Stomp.over(socket);
 
-  stomp.connect({}, () => {
-    // 게임 시작 결과
-    stomp.subscribe(`/sub/game/${eventId}/start`, (msg) => {
-      const data: StartGameDto = JSON.parse(msg.body);
+    stomp.connect({}, () => {
+      // 게임 시작
+      stomp.subscribe(`/sub/game/${eventId}/start`, (msg) => {
+        const data: StartGameDto = JSON.parse(msg.body);
+        setStarted(true);
+        setLeader(data.leader);
+        setPlayers(data.players);
+        setGameId(data.gameId ?? 0); // 바로 플레이 가능
+        setIsAlive(true);
+      });
 
-      setStarted(true);
-      setLeader(data.leader);
-      setPlayers(data.players);
-      setGameId(null);
-      setMyChoice(null);
-      setIsAlive(true);
+      // 라운드 결과
+      stomp.subscribe(`/sub/game/${eventId}/round`, (msg) => {
+        const data: GamePlayDto = JSON.parse(msg.body);
+        setLeader(data.leader);
+        setPlayers(data.players);
+        setGameId(data.gameId);
+
+        const me = data.players.find(p => p.memberId === myMemberId);
+        setIsAlive(!!me);
+      });
     });
 
-    // 라운드 결과
-    stomp.subscribe(`/sub/game/${eventId}/round`, (msg) => {
-      const data: GamePlayDto = JSON.parse(msg.body);
+    setClient(stomp);
 
-      setLeader(data.leader);
-      setPlayers(data.players);
-      setGameId(data.gameId);
-
-      const me = data.players.find(
-        (p) => p.memberId === myMemberId
-      );
-      setIsAlive(!!me);
-    });
-  });
     return () => {
-          if (client) {
-            try {
-              client.disconnect(() => {});
-            } catch (e) {
-              console.warn('[EventMainPage] client.disconnect error', e);
-            }
-          }
-        };
-  }, [eventId]);
+      stomp.disconnect(() => {});
+    };
+  }, [eventId, apiUrl, myMemberId]);
 
   /* ===========================
      선택 전송
   =========================== */
   const play = async (type: RPSType) => {
-  if (!isAlive) return;
+    if (!isAlive || !gameId) return;
 
-  setMyChoice(type);
-
-  await fetch(`${apiUrl}/api/v1/game/rsp/round`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      leader: {
-        ...leader,
-        type: leader?.memberId === myMemberId ? type : leader?.type,
-      },
-      players: players.map((p) =>
-        p.memberId === myMemberId ? { ...p, type } : p
-      ),
-      gameId,
-      eventId,
-    }),
-  });
-};
+    await fetch(`${apiUrl}/api/v1/game/rsp/play`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId,
+        gameId,
+        leader,
+        players: players.map(p =>
+          p.memberId === myMemberId ? { ...p, type } : p
+        ),
+      }),
+    });
+  };
 
   /* ===========================
      게임 시작 (사회자)
   =========================== */
   const startGame = async (winnerCnt: number) => {
-  await fetch(`${apiUrl}/api/v1/game/rsp/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      eventId,
-      winnerCnt,
-      leader: {
-        memberId: myMemberId,
-        nickname: myNickname,
-      },
-      players, // 이미 알고 있거나 서버에서 채워도 됨
-    }),
-  });
-};
+    await fetch(`${apiUrl}/api/v1/game/rsp/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId,
+        winnerCnt,
+        leader: {
+          memberId: myMemberId,
+          nickname: myNickname,
+        },
+        players: [], // 서버에서 채움
+      }),
+    });
+  };
 
   /* ===========================
      UI
@@ -130,13 +109,10 @@ export default function RpsGame({
       <h3 className="font-bold text-sm">✊✌️✋ 가위바위보</h3>
 
       {!started && (
-            <EventeeButton
-                variant="outline"
-                onClick={() => startGame(1)} // winnerCnt
-            >
-                가위바위보 시작
-            </EventeeButton>
-        )}  
+        <EventeeButton variant="outline" onClick={() => startGame(1)}>
+          가위바위보 시작
+        </EventeeButton>
+      )}
 
       {started && (
         <>
@@ -144,31 +120,25 @@ export default function RpsGame({
             🎤 사회자: <b>{leader?.nickname}</b>
           </p>
 
-          <div className="text-xs">
-            생존자:
-            <ul className="mt-1 list-disc ml-4">
-              {players.map((p) => (
-                <li key={p.memberId}>{p.nickname}</li>
-              ))}
-            </ul>
-          </div>
+          <ul className="text-xs list-disc ml-4">
+            {players.map(p => (
+              <li key={p.memberId}>{p.nickname}</li>
+            ))}
+          </ul>
         </>
       )}
 
-     {/* ② 생존자만 선택 */}
-    {started && gameId && isAlive && (
-    <div className="flex gap-2 justify-center pt-2">
-        <RpsButton label="✊" type="ROCK" onClick={play} />
-        <RpsButton label="✌️" type="SCISSOR" onClick={play} />
-        <RpsButton label="✋" type="PAPER" onClick={play} />
-    </div>
-    )}
+      {started && gameId && isAlive && (
+        <div className="flex gap-2 justify-center pt-2">
+          <RpsButton label="✊" type="ROCK" onClick={play} />
+          <RpsButton label="✌️" type="SCISSOR" onClick={play} />
+          <RpsButton label="✋" type="PAPER" onClick={play} />
+        </div>
+      )}
 
-     {started && gameId && !isAlive && (
-        <p className="text-red-500 text-sm font-bold text-center">
-            ❌ 탈락
-        </p>
-    )}
+      {started && !isAlive && (
+        <p className="text-red-500 text-sm font-bold text-center">❌ 탈락</p>
+      )}
     </div>
   );
 }
