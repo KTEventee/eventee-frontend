@@ -611,7 +611,7 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
 const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
   try {
     const res = await apiFetch(
-      `${API_URL}/api/v1/content/posts/${eventId}/gourps/${groupId}`,
+      `${API_URL}/api/v1/content/posts/${eventId}/groups/${groupId}`,
       { method: "GET" }
     );
 
