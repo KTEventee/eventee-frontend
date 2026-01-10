@@ -584,7 +584,7 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
 
   return {
     id: String(p.postId ?? p.id ?? ""),
-    author: p.author ?? p.writerNickname ?? p.writer ?? "알 수 없음",
+    author: p.writerNickname,
     content: p.content ?? p.text ?? "",
     type: isVote ? "vote" : "text",
     pollQuestion: p.pollQuestion ?? p.voteTitle ?? p.voteQuestion ?? undefined,
@@ -705,6 +705,7 @@ const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
       type: isPoll ? "VOTE" : "TEXT",
       content: newPostContent,
       voteTitle: isPoll ? pollQuestion : null,
+      writerNickname: displayNickname,
       voteContent: isPoll
         ? [pollOption1, pollOption2]
             .map((opt) => opt?.trim())
