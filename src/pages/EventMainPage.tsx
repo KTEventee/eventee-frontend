@@ -575,14 +575,23 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
         : `opt${userVoteRaw}`
       : undefined;
 
-  const comments = (p.comments ?? []).map((c: any) => ({
+  const comments = (p.comments ?? []).map((c: any) => {
+  const fallbackAuthor =
+    c.writerNickname ??
+    eventInfo?.nickname ??        // 이벤트 참여 닉네임
+    displayNickname ??            // 현재 로그인 유저 닉네임
+    "익명";
+
+  return {
     id: String(c.commentId ?? c.id ?? ""),
-    author: c.writerNickname ?? c.author ?? c.nickname ?? "익명",
+    author: fallbackAuthor,
     content: c.content ?? c.text ?? "",
     timestamp: c.createdAt ?? c.createdAtAt ?? c.timestamp ?? "",
     imageUrl: c.imageUrl ?? c.img ?? undefined,
     isWrite: Boolean(c.isMine ?? c.isWrite ?? false),
-  }));
+  };
+});
+
 
 console.log(
   "[DEBUG][convertPost] full post object",
