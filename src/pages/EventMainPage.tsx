@@ -23,7 +23,7 @@ import axios from 'axios';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import Battle from "../components/BattleAnimation";
-import RpsGame from "../components/RpsGame";
+// import RpsGame from "../components/RpsGame";
 
 type Comment = {
   id: string;
@@ -591,7 +591,11 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
     isWrite: Boolean(c.isMine ?? c.isWrite ?? false),
   };
 });
-
+  const author =
+    p.writerNickname ??
+    eventInfo?.nickname ??        // 🔥 이벤트 닉네임
+    displayNickname ??            // 🔥 현재 로그인 유저 닉네임
+    "익명";
 
 console.log(
   "[DEBUG][convertPost] full post object",
@@ -601,7 +605,7 @@ console.log(
 
   return {
     id: String(p.postId ?? p.id ?? ""),
-    author: p.writerNickname,
+    author,
     content: p.content ?? p.text ?? "",
     type: isVote ? "vote" : "text",
     pollQuestion: p.pollQuestion ?? p.voteTitle ?? p.voteQuestion ?? undefined,
@@ -988,13 +992,13 @@ console.log(
             title="대포 게임 시작"
           >
             {cannonLoading ? "대포 중..." : "대포쏘기"}
-          </EventeeButton>
+          {/* </EventeeButton>
           <RpsGame
           eventId={eventId}
           apiUrl={API_URL}
           myMemberId={Number(user.id)}
           myNickname={displayNickname}
-        />
+        /> */}
 
           <button
             type="button"
