@@ -1,77 +1,149 @@
 .battle-field {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at bottom left, #111, #000);
-  overflow: hidden;
   z-index: 9999;
+  overflow: hidden;
+
+  /* 더 깊이 있는 배경 */
+  background:
+    radial-gradient(circle at 15% 85%, rgba(255, 171, 93, 0.18), transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.08), transparent 50%),
+    radial-gradient(circle at bottom left, #141414, #000);
+
+  /* 살짝 블러/필름 느낌 */
+  backdrop-filter: blur(2px);
 }
 
+/* 바닥 라인(무대감) */
+.battle-field::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 46px;
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.18), transparent);
+  opacity: 0.7;
+}
+
+/* 대포 */
 .cannon {
   position: absolute;
-  bottom: 60px;
-  left: 60px;
+  bottom: 56px;
+  left: 56px;
   font-size: 64px;
-  transform-origin: center;
+  transform-origin: 60% 60%;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,0.45));
 }
 
+/* 반동 + 살짝 회전 */
 .cannon.fire {
-  animation: recoil 0.3s ease-out;
+  animation: recoil 0.28s ease-out;
 }
 
 @keyframes recoil {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(-15px); }
-  100% { transform: translateX(0); }
+  0%   { transform: translateX(0) rotate(0deg); }
+  45%  { transform: translateX(-14px) rotate(-8deg); }
+  100% { transform: translateX(0) rotate(0deg); }
 }
 
+/* 포탄: 더 “탄환” 느낌 + 궤적 */
 .bullet {
   position: absolute;
-  bottom: 90px;
-  left: 110px;
-  width: 18px;
-  height: 18px;
-  background: orange;
-  border-radius: 50%;
-  box-shadow: 0 0 12px orange;
-  animation: fly 0.8s linear forwards;
+  bottom: 92px;
+  left: 118px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+
+  background: radial-gradient(circle at 30% 30%, #ffe7c8, #ffab5d 35%, #ff7a18 75%);
+  box-shadow:
+    0 0 14px rgba(255, 171, 93, 0.95),
+    0 0 28px rgba(255, 122, 24, 0.55);
+
+  /* 꼬리 잔상 */
+  filter: drop-shadow(0 0 10px rgba(255, 171, 93, 0.55));
+
+  animation: fly 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* 궤적(트레일) */
+.bullet::before {
+  content: "";
+  position: absolute;
+  left: -36px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(to right, transparent, rgba(255,171,93,0.85));
+  opacity: 0.9;
+}
+
+/* 화면 크기 따라 대충 그럴듯한 포물선 */
 @keyframes fly {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(calc(100vw - 200px), -300px);
-  }
+  0%   { transform: translate(0, 0) scale(1); }
+  35%  { transform: translate(calc(45vw - 120px), -240px) scale(1.05); }
+  100% { transform: translate(calc(100vw - 260px), -320px) scale(0.95); }
 }
 
+/* 폭발: 위치 약간 조정 + 글로우 */
 .explosion {
   position: absolute;
-  top: 35%;
-  right: 20%;
-  font-size: 80px;
-  animation: explode 0.4s ease-out;
+  top: 32%;
+  right: 16%;
+  font-size: 88px;
   text-align: center;
+
+  filter:
+    drop-shadow(0 0 18px rgba(255, 171, 93, 0.35))
+    drop-shadow(0 0 28px rgba(255, 0, 0, 0.25));
+
+  animation: explode 0.45s ease-out;
 }
 
 @keyframes explode {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.4);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
+/* 결과 텍스트: 폭발 아래 “카드”처럼 */
 .result-text {
-  margin-top: 16px;
-  font-size: 36px;
-  font-weight: bold;
+  margin-top: 14px;
+  display: inline-block;
+
+  padding: 10px 14px;
+  border-radius: 14px;
+
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+
   color: #fff;
-  text-shadow: 0 0 10px red;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.35),
+    0 0 16px rgba(255, 0, 0, 0.20);
+
+  text-shadow: 0 0 10px rgba(255, 60, 60, 0.55);
+
+  /* 살짝 뜨는 애니메이션 */
+  animation: resultPop 0.22s ease-out;
+}
+
+@keyframes resultPop {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* 모바일 대응: 폭발 위치/텍스트 크기 조정 */
+@media (max-width: 480px) {
+  .cannon { left: 22px; bottom: 44px; font-size: 56px; }
+  .bullet { left: 78px; bottom: 78px; }
+  .explosion { right: 10%; top: 30%; font-size: 76px; }
+  .result-text { font-size: 22px; padding: 9px 12px; }
 }
