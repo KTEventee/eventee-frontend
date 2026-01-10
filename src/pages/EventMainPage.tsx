@@ -329,7 +329,7 @@ export default function EventMainPage() {
         thumbnailUrl,
         teamCount,
         groups,
-        role,
+        eventRole,
         nickname, // ✅ 백엔드에서 넘어오는 이벤트 내 닉네임 기대
       } = data.result;
 
@@ -356,7 +356,7 @@ export default function EventMainPage() {
         endAt,
         thumbnailUrl,
         teamCount,
-        role,
+        role: eventRole,
         nickname,
       });
 
