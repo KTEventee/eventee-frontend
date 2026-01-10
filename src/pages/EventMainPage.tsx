@@ -344,7 +344,7 @@ export default function EventMainPage() {
         endAt,
         thumbnailUrl,
         teamCount,
-        role,
+        eventRole,
         nickname,
       });
 
@@ -360,18 +360,19 @@ export default function EventMainPage() {
         nickname,
       });
 
-      const convertedTeams: Team[] = (groups ?? []).map((g: any) => ({
-        id: String(g.groupId),
-        name: g.groupName,
-        color: assignGroupColor(g.groupNo ?? g.groupId),
-        posts: [],
-        isMyTeam: Boolean(g.isMyGroup ?? g.isMine ?? false),
-        groupNum: Number(g.groupNum ?? g.groupNo ?? g.groupId),
-        groupNo: Number(g.groupNo ?? g.groupNum ?? g.groupId),
-        description: g.groupDescription,
-        leader: g.groupLeader,
-        img: g.groupImg,
-      }));
+const convertedTeams: Team[] = groups.map((g: any) => ({
+  id: String(g.groupId),
+  name: g.groupName,
+  color: assignGroupColor(g.groupNo),
+  posts: [],
+  isMyTeam: false, // 이 API에서는 안 주므로 일단 false
+  groupNum: g.groupNo,
+  groupNo: g.groupNo,
+  description: g.groupDescription,
+  leader: undefined,
+  img: undefined,
+}));
+
 
       console.log("[EventMainPage] 변환된 팀 목록", convertedTeams);
 
@@ -604,7 +605,7 @@ export default function EventMainPage() {
     try {
       console.log("[EventMainPage] 그룹 게시글 조회 시작", { eventId, groupId });
       const res = await apiFetch(
-        `${API_URL}/api/v1/content/posts/${eventId}/gourps/${groupId}`,
+        `${API_URL}/api/v1/content/posts/${eventId}/groups/${groupId}`,
         {
           method: "GET",
         }
