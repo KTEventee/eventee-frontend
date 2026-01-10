@@ -500,6 +500,8 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
   // ==========================
   // Post 변환 함수
   // ==========================
+
+
     const convertPost = (p: any): Post => {
       const rawType = (p.type ?? "").toString();
   const hasVoteFields =
@@ -582,11 +584,10 @@ const convertedTeams: Team[] = groups.map((g: any) => ({
     isWrite: Boolean(c.isMine ?? c.isWrite ?? false),
   }));
 
-    console.log("[DEBUG] convertPost input", {
-    postId: p.postId,
-    type: p.type,
-    comments: p.comments,
-  });
+console.log(
+  "[DEBUG][convertPost] full post object",
+  JSON.stringify(p, null, 2)
+);
 
 
   return {
@@ -616,6 +617,12 @@ const fetchGroupPosts = async (groupId: string): Promise<Post[]> => {
     );
 
     const data = await res.json();
+
+console.log(
+  "[DEBUG][fetchGroupPosts] raw response data",
+  JSON.stringify(data, null, 2)
+);
+
     if (!data.isSuccess) return [];
 
     const lists = data.result?.lists;
